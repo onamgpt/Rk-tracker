@@ -1124,202 +1124,44 @@ function exportPDF(entries,label){
   const isDone=e=>e.tags?.includes("Done");
   const pending=entries.filter(e=>!isDone(e));
   const done=entries.filter(e=>isDone(e));
-  const rows=(list,title)=>{
+  const makeRows=(list,title)=>{
     if(!list.length)return"";
-    return`<h3 style="margin:16px 0 8px;color:${title==="Pending"?"#8B0000":"#155724"};font-size:14px">${title==="Pending"?"⏳":"✅"} ${title} (${list.length})</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
-      <thead><tr style="background:#4a2e00;color:#f5d890"><th style="padding:6px 8px;text-align:left">Title</th><th style="padding:6px 8px;text-align:left">Date</th><th style="padding:6px 8px;text-align:left">Person</th><th style="padding:6px 8px;text-align:left">Amount</th><th style="padding:6px 8px;text-align:left">Status</th><th style="padding:6px 8px;text-align:left">Notes</th></tr></thead>
-      <tbody>${list.map((e,i)=>`<tr style="background:${i%2===0?"#fffdf7":"#fff8ee"}"><td style="padding:6px 8px;font-weight:700">${e.title}</td><td style="padding:6px 8px;white-space:nowrap">${fmtDate(e.date)}</td><td style="padding:6px 8px">${e.person||""}</td><td style="padding:6px 8px;color:#1a5a00;font-weight:700">${e.amount||""}</td><td style="padding:6px 8px">${e.paymentStatus||""}</td><td style="padding:6px 8px;font-size:11px">${(e.notes||"").slice(0,60)}</td></tr>`).join("")}</tbody>
-    </table>`;
+    const color=title==="Pending"?"#8B0000":"#155724";
+    const icon=title==="Pending"?"⏳":"✅";
+    let rows="";
+    list.forEach((e,i)=>{
+      rows+="<tr style='background:"+(i%2===0?"#fffdf7":"#fff8ee")+"'>"+
+        "<td style='padding:6px 8px;font-weight:700'>"+e.title+"</td>"+
+        "<td style='padding:6px 8px;white-space:nowrap'>"+fmtDate(e.date)+"</td>"+
+        "<td style='padding:6px 8px'>"+( e.person||"")+"</td>"+
+        "<td style='padding:6px 8px;color:#1a5a00;font-weight:700'>"+(e.amount||"")+"</td>"+
+        "<td style='padding:6px 8px'>"+(e.paymentStatus||"")+"</td>"+
+        "<td style='padding:6px 8px;font-size:11px'>"+(e.notes||"").slice(0,60)+"</td></tr>";
+    });
+    return "<h3 style='margin:16px 0 8px;color:"+color+";font-size:14px'>"+icon+" "+title+" ("+list.length+")</h3>"+
+      "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px'>"+
+      "<thead><tr style='background:#4a2e00;color:#f5d890'>"+
+      "<th style='padding:6px 8px;text-align:left'>Title</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Date</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Person</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Amount</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Status</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Notes</th></tr></thead>"+
+      "<tbody>"+rows+"</tbody></table>";
   };
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Georgia,serif;color:#2a1a00;padding:24px;max-width:900px;margin:0 auto;}@media print{body{padding:0;}}</style></head><body>
-  <div style="background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:16px 20px;border-radius:8px;margin-bottom:20px">
-    <div style="font-size:11px;color:#c8a860;margin-bottom:4px">🌿 Onam Agarbathi · RK Life Tracker</div>
-    <div style="font-size:20px;font-weight:700">${label} — Task Report</div>
-    <div style="font-size:11px;color:#c8a860;margin-top:4px">Generated: ${new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})} · ${entries.length} entries</div>
-  </div>
-  ${rows(pending,"Pending")}${rows(done,"Done")}
-  </body></html>`;
-  const w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
-}
-
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
-function App(){
-  if(IS_VIEW_MODE) return<ShareableView/>;
-
-  const [entries,setEntries]=useState(loadCache);
-  const [dropdowns,setDropdowns]=useState(loadDD);
-  const [loading,setLoading]=useState(false);
-  const [saving,setSaving]=useState(false);
-  const [syncStatus,setSyncStatus]=useState("");
-  const [showForm,setShowForm]=useState(false);
-  const [showOrder,setShowOrder]=useState(false);
-  const [editE,setEditE]=useState(null);
-  const [viewE,setViewE]=useState(null);
-  const [showDupes,setShowDupes]=useState(false);
-  const [showAI,setShowAI]=useState(false);
-  const [showDD,setShowDD]=useState(false);
-  const [showShare,setShowShare]=useState(false);
-  const [search,setSearch]=useState("");
-  const [filterCat,setFilterCat]=useState("All");
-  const [filterTag,setFilterTag]=useState("");
-  const [filterPerson,setFilterPerson]=useState("");
-  const [filterAccount,setFilterAccount]=useState("");
-  const [filterVendor,setFilterVendor]=useState("");
-  const [filterStatus,setFilterStatus]=useState("");
-  const [hideDone,setHideDone]=useState(false);
-  const [sort,setSort]=useState("date_desc");
-
-  useEffect(()=>{saveDD(dropdowns);},[dropdowns]);
-
-  // BULLETPROOF SYNC — localStorage primary, Sheets backup
-  // Shared users also pull ALL team entries from Sheets
-  useEffect(()=>{
-    const cached=loadCache();
-    setEntries(cached);
-    setLoading(false);
-    setSyncStatus(cached.length>0?"📱 "+cached.length+" entries":"📱 Ready");
-
-    sheetsAPI("getAll").then(r=>{
-      if(r.error||!r.entries){
-        setSyncStatus("📴 Offline · "+cached.length+" entries safe");
-        return;
-      }
-      if(CURRENT_USER.admin){
-        // Admin (Krr) — see ALL entries from all team members
-        const sheetsMap={};
-        r.entries.forEach(e=>{sheetsMap[e.id]=e;});
-        const localMap={};
-        cached.forEach(e=>{localMap[e.id]=e;});
-        // Local takes priority for same entry
-        const merged=Object.values({...sheetsMap,...localMap});
-        merged.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-        setEntries(merged);
-        saveCache(merged);
-        setSyncStatus("✅ "+merged.length+" entries (team)");
-      } else {
-        // Team member — see only their own entries + push new ones
-        const ids=new Set(r.entries.map(e=>e.id));
-        const missing=cached.filter(e=>!ids.has(e.id));
-        missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
-        setSyncStatus("✅ "+cached.length+" entries synced");
-      }
-    }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
-
-    sheetsAPI("getDropdowns").then(r=>{
-      if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));
-    }).catch(()=>{});
-  },[]);
-
-  const saveEntry=async(entry)=>{
-    setSaving(true);
-    // Auto-tag entry with current user
-    const taggedEntry={...entry,
-      loggedBy:URL_USER,
-      loggedByName:CURRENT_USER.name,
-      // Non-admin users auto-set their person field
-      person:entry.person||(URL_USER!=="main"?CURRENT_USER.name:"")
-    };
-    setEntries(p=>{const ex=p.find(x=>x.id===taggedEntry.id);const updated=ex?p.map(x=>x.id===taggedEntry.id?taggedEntry:x):[taggedEntry,...p];saveCache(updated);return updated;});
-    const r=await sheetsAPI("save",{entry:taggedEntry});
-    setSyncStatus(r.error?"⚠️ Saved locally only":"✅ Saved to Google Sheets");
-    if(entry.person&&!dropdowns.persons.includes(entry.person))addToDropdown("persons",entry.person);
-    if(entry.vendor&&!dropdowns.vendors.includes(entry.vendor))addToDropdown("vendors",entry.vendor);
-    if(entry.account&&!dropdowns.accounts.includes(entry.account))addToDropdown("accounts",entry.account);
-    setSaving(false);setShowForm(false);setEditE(null);
-  };
-
-  const delEntry=async(id)=>{
-    setEntries(p=>{const u=p.filter(e=>e.id!==id);saveCache(u);return u;});
-    setViewE(null);setShowDupes(false);
-    await sheetsAPI("delete",{id});
-  };
-
-  const markDone=async(id)=>{
-    const updated=entries.map(e=>e.id===id?{...e,tags:[...new Set([...e.tags||[],"Done"])]}:e);
-    setEntries(updated);saveCache(updated);setViewE(null);
-    const entry=updated.find(e=>e.id===id);
-    if(entry)await sheetsAPI("save",{entry});
-  };
-
-  const addToDropdown=(list,val)=>{
-    setDropdowns(p=>{if(p[list]?.includes(val))return p;const u={...p,[list]:[...p[list],val]};sheetsAPI("saveDropdowns",{dropdowns:u}).catch(()=>{});return u;});
-  };
-
-  const saveDropdowns=async(dd)=>{
-    setDropdowns(dd);saveDD(dd);
-    await sheetsAPI("saveDropdowns",{dropdowns:dd});
-  };
-
-  const refresh=async()=>{
-    // Manual sync — push local to sheets, never overwrite local
-    setLoading(true);setSyncStatus("📤 Syncing to Google Sheets...");
-    const cached=loadCache();
-    if(cached.length===0){setSyncStatus("📱 No entries to sync");setLoading(false);return;}
-    try{
-      const r=await sheetsAPI("getAll");
-      const sheetIds=new Set((r.entries||[]).map(e=>e.id));
-      const toSync=cached.filter(e=>!sheetIds.has(e.id));
-      if(toSync.length>0){
-        await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
-        setSyncStatus("✅ "+cached.length+" entries · "+toSync.length+" new backed up · "+new Date().toLocaleTimeString("en-IN"));
-      } else {
-        setSyncStatus("✅ All "+cached.length+" entries backed up · "+new Date().toLocaleTimeString("en-IN"));
-      }
-    }catch(e){
-      setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");
-    }
-    setLoading(false);
-  };
-
-  const allPersons=[...new Set([...dropdowns.persons,...entries.map(e=>e.person).filter(Boolean)])];
-  const allAccounts=[...new Set([...dropdowns.accounts,...entries.map(e=>e.account).filter(Boolean)])];
-  const allVendors=[...new Set([...dropdowns.vendors,...entries.map(e=>e.vendor).filter(Boolean)])];
-
-  const filtered=useMemo(()=>entries.filter(e=>{
-    if(hideDone&&e.tags?.includes("Done"))return false;
-    if(filterCat!=="All"&&e.category!==filterCat)return false;
-    if(filterTag&&!e.tags?.includes(filterTag))return false;
-    if(filterPerson&&e.person!==filterPerson)return false;
-    if(filterAccount&&e.account!==filterAccount)return false;
-    if(filterVendor&&e.vendor!==filterVendor)return false;
-    if(filterStatus&&e.paymentStatus!==filterStatus)return false;
-    if(search){const q=search.toLowerCase();return["title","notes","person","vendor","amount","taskType","chemical","account","financialType","property"].some(k=>(e[k]||"").toLowerCase().includes(q));}
-    return true;
-  }).sort((a,b)=>{
-    if(sort==="date_desc")return(b.date||"").localeCompare(a.date||"");
-    if(sort==="date_asc") return(a.date||"").localeCompare(b.date||"");
-    return(a.title||"").localeCompare(b.title||"");
-  }),[entries,hideDone,filterCat,filterTag,filterPerson,filterAccount,filterVendor,filterStatus,search,sort]);
-
-  const overdueN=entries.filter(e=>isOverdue(e.reminder)&&!e.tags?.includes("Done")).length;
-  const superN=entries.filter(e=>e.tags?.includes("Super Pending")).length;
-  const dupeN=useMemo(()=>{const s={};entries.forEach(e=>{const k=(e.title||"").toLowerCase().trim();if(k)s[k]=(s[k]||0)+1;});return Object.values(s).filter(n=>n>1).length;},[entries]);
-
-  const getRowBg=e=>{
-    const t=e.tags||[];
-    if(t.includes("Done"))return"#f4fbf4";
-    if(t.includes("Super Pending"))return"#ffe8e8";
-    if(t.includes("Overdue")||isOverdue(e.reminder))return"#fff6f6";
-    if(t.includes("Urgent"))return"#fff8f0";
-    if(t.includes("GOVT"))return"#f0f4ff";
-    if(t.includes("Paid"))return"#f4fbf4";
-    if(t.includes("Payment Due"))return"#fffbf0";
-    return"#fffdf7";
-  };
-
-  const fSel={padding:"6px 10px",borderRadius:8,border:"1px solid #7a5a20",background:"rgba(255,255,255,.12)",color:"#f5e8c0",fontSize:12,cursor:"pointer",outline:"none"};
-  const ALL_CATS=["All",...dropdowns.categories];
-
-  // Share panel
-  const SharePanel=()=>{
-    const [copied,setCopied]=useState("");
-    const base=window.location.origin+window.location.pathname;
-    const persons=[...new Set(entries.map(e=>e.person).filter(Boolean))];
-    const accounts=[...new Set(entries.map(e=>e.account).filter(Boolean))];
-    const tags=[...new Set(entries.flatMap(e=>e.tags||[]).filter(t=>t!=="Done"))];
-    const copy=(url,key)=>{navigator.clipboard.writeText(url).then(()=>{setCopied(key);setTimeout(()=>setCopied(""),2000);});};
-    const Row=({label,url,k})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"#fffdf5",borderRadius:8,marginBottom:5,gap:8}}>
+  const html="<!DOCTYPE html><html><head><meta charset='UTF-8'/>"+
+    "<style>body{font-family:Georgia,serif;color:#2a1a00;padding:24px;max-width:900px;margin:0 auto;}</style></head><body>"+
+    "<div style='background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:16px 20px;border-radius:8px;margin-bottom:20px'>"+
+    "<div style='font-size:11px;color:#c8a860;margin-bottom:4px'>🌿 Onam Agarbathi · RK Life Tracker</div>"+
+    "<div style='font-size:20px;font-weight:700'>"+label+" - Task Report</div>"+
+    "<div style='font-size:11px;color:#c8a860;margin-top:4px'>Generated: "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+" · "+entries.length+" entries</div></div>"+
+    makeRows(pending,"Pending")+makeRows(done,"Done")+
+    "</body></html>";
+  const w=window.open("","_blank");
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}>
       <div><div style={{fontSize:13,fontWeight:600,color:"#3a2800"}}>{label}</div><div style={{fontSize:10,color:"#9a8060",wordBreak:"break-all"}}>{url}</div></div>
       <button onClick={()=>copy(url,k)} style={{padding:"5px 12px",borderRadius:7,border:"none",background:copied===k?"#2a7a2a":"linear-gradient(135deg,#c8860a,#a06010)",color:"#fff",cursor:"pointer",fontSize:11,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{copied===k?"✓ Copied":"Copy"}</button>
     </div>;
