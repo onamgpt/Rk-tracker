@@ -515,7 +515,7 @@ function ScanBill({onResult,onMultiResult}){
     setProgress({current:0,total:arr.length});
     const results=[];
     for(let i=0;i<arr.length;i++){
-      setScanMsg(`Scanning ${i+1} of ${arr.length}...`);
+      setScanMsg("Scanning "+(i+1)+" of "+arr.length+"...");
       setProgress({current:i+1,total:arr.length});
       try{
         const att=await fileToB64(arr[i]);
@@ -529,7 +529,7 @@ function ScanBill({onResult,onMultiResult}){
         catch(ex){parsed.notes=txt.slice(0,300);}
         results.push({...parsed,attachments:[att],id:genId(),createdAt:new Date().toISOString()});
       }catch(e){
-        results.push({title:`Bill ${i+1} (scan failed)`,date:today(),tags:["Pending"],notes:e.message,id:genId(),createdAt:new Date().toISOString()});
+        results.push({title:"Bill "+(i+1)+" (scan failed)",date:today(),tags:["Pending"],notes:e.message,id:genId(),createdAt:new Date().toISOString()});
       }
     }
     setScanMsg("✅ "+results.length+" bills scanned!");
