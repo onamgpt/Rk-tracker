@@ -638,7 +638,7 @@ function DropdownManager({dropdowns,onSave,onClose}){
   return<div>
     <h2 style={{margin:"0 0 12px",fontSize:18}}>⚙️ Manage Dropdowns</h2>
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
-      {Object.entries(KEYS).map(([k,l])=><button key={k} onClick={()=>setActive(k)} style={{padding:"4px 11px",borderRadius:20,border:`1.5px solid ${active===k?"#c8a060":"#e0d0b8"}`,background:active===k?"#fff3d8":"#fffdf7",color:active===k?"#7a4800":"#7a6a52",cursor:"pointer",fontSize:12,fontWeight:active===k?700:400}}>{l}</button>)}
+      {Object.entries(KEYS).map(([k,l])=><button key={k} onClick={()=>setActive(k)} style={{padding:"4px 11px",borderRadius:20,border:(active===k?"1.5px solid #c8a060":"1.5px solid #e0d0b8"),background:active===k?"#fff3d8":"#fffdf7",color:active===k?"#7a4800":"#7a6a52",cursor:"pointer",fontSize:12,fontWeight:active===k?700:400}}>{l}</button>)}
     </div>
     <div style={{background:"#fffdf5",border:"1px solid #e8dcc8",borderRadius:10,padding:10,marginBottom:10,maxHeight:200,overflowY:"auto"}}>
       {dd[active].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 8px",borderBottom:"1px solid #f0e8d8"}}>
