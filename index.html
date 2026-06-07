@@ -206,21 +206,51 @@ function fileToB64(f){
 
 // ── OCR BILL SCANNER ──────────────────────────────────────────────────────────
 async function scanBill(imageBase64,imageType){
-  const system=`You are an OCR and data extraction assistant for Onam Agarbathi Pvt. Ltd., a Bangalore incense manufacturer.
-Extract invoice/bill data and return ONLY valid JSON with these exact fields:
+  const system=`You are an expert OCR assistant for Onam Agarbathi Pvt. Ltd., Bangalore incense manufacturer.
+Determine bill type:
+- PURCHASE BILL: Onam is buying (Onam is "Billed To") → vendor = supplier
+- SALES INVOICE: Onam is selling (Onam is supplier) → title = CUSTOMER NAME
+
+Return ONLY valid JSON:
 {
-  "title": "short description",
+  "title": "PURCHASE: vendor+item name. SALES: customer name + invoice no",
   "date": "YYYY-MM-DD",
-  "vendor": "vendor name",
-  "amount": "total amount with ₹",
-  "invoiceNo": "invoice number",
-  "gstin": "vendor GSTIN",
-  "category": "Business - Purchase",
-  "financialType": "Purchase Value",
+  "vendor": "vendor/supplier company name",
+  "customer": "customer name if sales invoice, else empty",
+  "amount": "grand total with ₹",
+  "invoiceNo": "invoice or bill number",
+  "gstin": "other party GSTIN",
+  "quantity": "total quantity with unit eg 60 KGS or 247 Cases",
+  "items": "item1: qty@rate=amt, item2: qty@rate=amt",
+  "category": "Business - Purchase or Business - Dispatch",
+  "financialType": "Purchase Value or Sales Value",
   "paymentStatus": "Payment Pending",
-  "notes": "key items summary, quantities, rates",
-  "tags": ["Pending"],
-  "chemical": "chemical/fragrance name if applicable"
+  "chemical": "fragrance/chemical name if applicable eg Jasmine ASP",
+  "notes": "line items with qty and rates. GST breakdown. Key reference numbers",
+  "tags": ["Pending"]
+}`;
+
+  const prompt="Extract all data from this bill/invoice. Return only valid JSON.";
+  try{
+    const result=await claudeAPI(prompt,system,imageBase64,imageType);
+    const clean=result.replace(/```json|```/g,"").trim();
+    const ocr=JSON.parse(clean);
+    // Smart title
+    const smartTitle=ocr.customer?
+      `${ocr.customer} - ${ocr.invoiceNo||"Invoice"}`:
+      ocr.title||`${ocr.vendor||"Bill"} ${ocr.invoiceNo||""}`.trim();
+    // Full notes with quantity for AI cumulation
+    const fullNotes=[
+      ocr.notes||"",
+      ocr.quantity?`Qty: ${ocr.quantity}`:"",
+      ocr.items?`Items: ${ocr.items}`:"",
+      ocr.customer?`Customer: ${ocr.customer}`:"",
+      ocr.gstin?`GSTIN: ${ocr.gstin}`:""
+    ].filter(Boolean).join(" | ");
+    return {...ocr, title:smartTitle, notes:fullNotes};
+  }catch(e){
+    return {title:"Scanned bill",notes:"OCR failed: "+e.message,date:today(),tags:["Pending"]};
+  }
 }
 Return ONLY the JSON object, no other text.`;
 
@@ -276,9 +306,15 @@ Return ONLY the JSON, no other text.`;
 // ── AI INSIGHTS ───────────────────────────────────────────────────────────────
 async function getAIInsights(entries,question){
   const system=`You are a business intelligence assistant for Onam Agarbathi Pvt. Ltd., a 100+ year old Bangalore incense manufacturer (Vaishak brand). 
-You know: CSD/CPC orders, raw materials (Jasmine ASP, Sandal, Rose, bamboo sticks, jigat), compliance (GST, ESI, EPF, PT, TDS 194), 
+You know: CSD/CPC orders, raw materials (Jasmine ASP, Sandal, Rose, bamboo sticks, jigat, DOP, DEP), compliance (GST, ESI, EPF, PT, TDS 194), 
 accounts (Kotak, IDBI, ICICI, Zerodha, HDFC), people (Prakash, Satish auditor, Maadhu, Virupaksha, Gopal Reddy).
-Analyse ALL data deeply including document contents in notes. Be specific with amounts, dates, names.
+IMPORTANT CAPABILITIES:
+- Cumulate quantities across entries (total kg purchased, total cases dispatched etc)
+- Cross-reference purchases vs sales for stock analysis
+- Identify payment gaps and overdue amounts
+- Analyse by person who logged the entry (loggedByName field)
+- Compare periods (this week vs last week)
+Be specific with amounts, dates, names, quantities.
 Flag risks, overdue items, action items. Use ₹ formatting with lakhs/crores notation.`;
 
   // Include full notes (which may contain extracted document text)
