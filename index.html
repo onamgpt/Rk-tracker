@@ -700,7 +700,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
       // For multiple bills - save all except first directly, open first in form
       results.slice(1).forEach(r=>onSave({...r,id:r.id||genId()}));
       applyScanData(results[0]);
-      if(results.length>1)alert(`✅ ${results.length} bills scanned! First bill loaded in form. Other ${results.length-1} saved automatically.`);
+      if(results.length>1)alert("✅ "+results.length+" bills scanned! First bill loaded in form. Other "+(results.length-1)+" saved automatically.");
     }}/>
 
     <div style={G2}>
