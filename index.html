@@ -1326,9 +1326,9 @@ function App(){
     return<div>
       <h2 style={{margin:"0 0 4px",fontSize:18}}>🔗 Share View Links</h2>
       <p style={{fontSize:12,color:"#9a8060",marginBottom:12}}>Read-only filtered view — recipient can't edit</p>
-      {persons.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>👤 By Person</div>{persons.map(p=><Row key={p} label={p} url={`${base}?person=${encodeURIComponent(p)}`} k={p}/>)}</div>}
-      {tags.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏷 By Tag</div>{tags.slice(0,6).map(t=><Row key={t} label={t} url={`${base}?tag=${encodeURIComponent(t)}`} k={t}/>)}</div>}
-      {accounts.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏦 By Account</div>{accounts.slice(0,5).map(a=><Row key={a} label={a} url={`${base}?account=${encodeURIComponent(a)}`} k={a}/>)}</div>}
+      {persons.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>👤 By Person</div>{persons.map(p=><Row key={p} label={p} url={base+"?person="+encodeURIComponent(p)} k={p}/>)}</div>}
+      {tags.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏷 By Tag</div>{tags.slice(0,6).map(t=><Row key={t} label={t} url={base+"?tag="+encodeURIComponent(t)} k={t}/>)}</div>}
+      {accounts.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏦 By Account</div>{accounts.slice(0,5).map(a=><Row key={a} label={a} url={base+"?account="+encodeURIComponent(a)} k={a}/>)}</div>}
       <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button className="bgh" onClick={()=>setShowShare(false)}>Close</button></div>
     </div>;
   };
