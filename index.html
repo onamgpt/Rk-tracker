@@ -532,7 +532,7 @@ function ScanBill({onResult,onMultiResult}){
         results.push({title:`Bill ${i+1} (scan failed)`,date:today(),tags:["Pending"],notes:e.message,id:genId(),createdAt:new Date().toISOString()});
       }
     }
-    setScanMsg(`✅ ${results.length} bills scanned!`);
+    setScanMsg("✅ "+results.length+" bills scanned!");
     setScanning(false);
     setProgress({current:0,total:0});
     if(onMultiResult) onMultiResult(results);
