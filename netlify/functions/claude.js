@@ -16,28 +16,20 @@ exports.handler = async (event) => {
       res.on("end", () => resolve(data));
     });
     req.on("error", reject);
-    req.setTimeout(25000, () => { req.destroy(); reject(new Error("Request timeout")); });
+    req.setTimeout(25000, () => { req.destroy(); reject(new Error("Timeout")); });
     req.write(body);
     req.end();
   });
 
   try {
-    const body = JSON.parse(event.body || "{}");
-    const { prompt, system, imageBase64, imageType } = body;
-    
-    const p1 = "sk-ant-api03-plPEHQK-xn1jf0HMvx3ffBO";
-    const p2 = "d81tj721UkMowLoxqE2DkFY_C5Etb841MnKeJ-fn97aG6oHMhVX";
-    const p3 = "byXXzlpeEIXw-7uMffwAA";
-    const apiKey = process.env.ANTHROPIC_API_KEY || (p1+p2+p3);
+    const { prompt, system, imageBase64, imageType } = JSON.parse(event.body || "{}");
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return { statusCode: 500, headers: h, body: JSON.stringify({ error: "API key not set in Netlify environment variables" }) };
 
     const content = [];
-    if (imageBase64 && imageBase64.length > 0) {
-      // Limit image size - truncate if too large
+    if (imageBase64) {
       const imgData = imageBase64.length > 1000000 ? imageBase64.slice(0, 1000000) : imageBase64;
-      content.push({ 
-        type: "image", 
-        source: { type: "base64", media_type: imageType || "image/jpeg", data: imgData } 
-      });
+      content.push({ type: "image", source: { type: "base64", media_type: imageType || "image/jpeg", data: imgData } });
     }
     content.push({ type: "text", text: prompt || "Hello" });
 
@@ -48,7 +40,7 @@ exports.handler = async (event) => {
       messages: [{ role: "user", content }]
     });
 
-    const options = {
+    const raw = await makeRequest({
       hostname: "api.anthropic.com",
       path: "/v1/messages",
       method: "POST",
@@ -58,13 +50,9 @@ exports.handler = async (event) => {
         "anthropic-version": "2023-06-01",
         "Content-Length": Buffer.byteLength(reqBody)
       }
-    };
+    }, reqBody);
 
-    const raw = await makeRequest(options, reqBody);
-    let d;
-    try { d = JSON.parse(raw); } 
-    catch(e) { return { statusCode: 500, headers: h, body: JSON.stringify({ error: "Parse error: " + raw.slice(0,200) }) }; }
-    
+    const d = JSON.parse(raw);
     if (d.error) return { statusCode: 500, headers: h, body: JSON.stringify({ error: d.error.message }) };
     return { statusCode: 200, headers: h, body: JSON.stringify({ text: d.content?.[0]?.text || "" }) };
   } catch (e) {
