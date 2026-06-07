@@ -45,8 +45,7 @@ const URL_USER=URL_PARAMS_U.get("user")||"main";
 
 // Shared business users — their data syncs to YOUR Google Sheet
 const SHARED_USERS=["main","prakash","maadhu","virupaksha","gopal",
-  "sales1","sales2","sales3","sales4","sales5",
-  "sales6","sales7","sales8","sales9","sales10"];
+  "satish","sebi","sugeesh","sunil","biju","sadasivan","sooraj","murugan"];
 const IS_SHARED=SHARED_USERS.includes(URL_USER.toLowerCase());
 
 // Private users — their data goes to separate storage
@@ -64,17 +63,15 @@ const USER_CONFIG={
   gopal:   {name:"Gopal Reddy",color:"#4a2a0a",bg:"#f0d8c8",admin:false},
   wife:    {name:"Wife",     color:"#6a1a4a", bg:"#f8c8e8", admin:false},
   daughter:{name:"Daughter", color:"#1a4a6a", bg:"#c8e0ff", admin:false},
-  // Sales team — add names when you know them
-  sales1:  {name:"Sales 1",  color:"#3a5a0a", bg:"#d8f0c8", admin:false},
-  sales2:  {name:"Sales 2",  color:"#5a3a0a", bg:"#f0e0c8", admin:false},
-  sales3:  {name:"Sales 3",  color:"#0a3a5a", bg:"#c8e0f0", admin:false},
-  sales4:  {name:"Sales 4",  color:"#5a0a3a", bg:"#f0c8e0", admin:false},
-  sales5:  {name:"Sales 5",  color:"#3a0a5a", bg:"#e0c8f0", admin:false},
-  sales6:  {name:"Sales 6",  color:"#0a5a3a", bg:"#c8f0e0", admin:false},
-  sales7:  {name:"Sales 7",  color:"#5a5a0a", bg:"#f0f0c8", admin:false},
-  sales8:  {name:"Sales 8",  color:"#0a5a5a", bg:"#c8f0f0", admin:false},
-  sales9:  {name:"Sales 9",  color:"#5a0a0a", bg:"#f0c8c8", admin:false},
-  sales10: {name:"Sales 10", color:"#0a0a5a", bg:"#c8c8f0", admin:false},
+  // Sales team
+  satish:   {name:"Satish Kumar",  color:"#1a4a1a", bg:"#d8f0c8", admin:false},
+  sebi:     {name:"Sebi Joseph",   color:"#1a1a6a", bg:"#c8d8f8", admin:false},
+  sugeesh:  {name:"Sugeesh Babu",  color:"#4a1a1a", bg:"#f8d8d8", admin:false},
+  sunil:    {name:"Sunil Kumar",   color:"#4a3a0a", bg:"#f8f0c8", admin:false},
+  biju:     {name:"Biju Verghese", color:"#1a3a4a", bg:"#c8e8f8", admin:false},
+  sadasivan:{name:"Sadasivan",     color:"#3a1a4a", bg:"#e8d8f8", admin:false},
+  sooraj:   {name:"Sooraj",        color:"#0a4a3a", bg:"#c8f8e8", admin:false},
+  murugan:  {name:"Murugan",       color:"#4a2a0a", bg:"#f8e0c8", admin:false},
 };
 const CURRENT_USER=USER_CONFIG[URL_USER.toLowerCase()]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
@@ -924,6 +921,244 @@ function shareEntryHTML(entry){
 }
 
 
+
+// ── PRODUCT CATALOG ───────────────────────────────────────────────────────────
+const PRODUCTS = [
+  {id:"sandal75",  name:"Onam Sandal 7.5"",    pack:"240 sticks/case", price:7490.40, gst:5, unit:"Case"},
+  {id:"rose75",    name:"Onam Rose 7.5"",       pack:"240 sticks/case", price:7999.20, gst:5, unit:"Case"},
+  {id:"3frag75",   name:"Onam 3 Fragrance 7.5"",pack:"240 sticks/case", price:8316.00, gst:5, unit:"Case"},
+  {id:"15sticks",  name:"Onam 15 Sticks",        pack:"720 sticks/case", price:4651.20, gst:5, unit:"Case"},
+  {id:"vaishak",   name:"Vaishak Premium",       pack:"12 dozen/case",   price:0,       gst:5, unit:"Case"},
+  {id:"mogra",     name:"Onam Mogra",            pack:"240 sticks/case", price:0,       gst:5, unit:"Case"},
+  {id:"custom",    name:"Other / Custom",         pack:"",               price:0,       gst:5, unit:"Case"},
+];
+
+function OrderForm({onSave,onClose,dropdowns}){
+  const [customer,setCustomer]=useState("");
+  const [address,setAddress]=useState("");
+  const [phone,setPhone]=useState("");
+  const [gstin,setGstin]=useState("");
+  const [items,setItems]=useState([{productId:"",name:"",qty:1,price:0,gst:5}]);
+  const [notes,setNotes]=useState("");
+  const [showProforma,setShowProforma]=useState(false);
+  const [photo,setPhoto]=useState(null);
+
+  const addItem=()=>setItems(p=>[...p,{productId:"",name:"",qty:1,price:0,gst:5}]);
+  const removeItem=i=>setItems(p=>p.filter((_,j)=>j!==i));
+  const updateItem=(i,k,v)=>setItems(p=>p.map((item,j)=>j===i?{...item,[k]:v}:item));
+
+  const selectProduct=(i,pid)=>{
+    const p=PRODUCTS.find(p=>p.id===pid);
+    if(p) updateItem(i,"productId",pid);
+    if(p) updateItem(i,"name",p.name);
+    if(p) updateItem(i,"price",p.price);
+    if(p) updateItem(i,"gst",p.gst);
+  };
+
+  const totals=items.map(it=>{
+    const base=it.qty*(it.price||0);
+    const gstAmt=base*(it.gst||5)/100;
+    return{base,gstAmt,total:base+gstAmt};
+  });
+  const grandBase=totals.reduce((s,t)=>s+t.base,0);
+  const grandGST=totals.reduce((s,t)=>s+t.gstAmt,0);
+  const grandTotal=totals.reduce((s,t)=>s+t.total,0);
+
+  const generateProforma=()=>{
+    const w=window.open("","_blank");
+    const rows=items.map((it,i)=>`
+      <tr>
+        <td style="padding:8px;border:1px solid #ddd">${i+1}</td>
+        <td style="padding:8px;border:1px solid #ddd">${it.name||"Item"}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.qty}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${(it.price||0).toFixed(2)}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${totals[i].base.toFixed(2)}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.gst}%</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${totals[i].gstAmt.toFixed(2)}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700">₹${totals[i].total.toFixed(2)}</td>
+      </tr>`).join("");
+
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Proforma - ${customer}</title>
+    <style>
+      body{font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto;color:#222;}
+      @media print{body{padding:5px;}}
+      table{width:100%;border-collapse:collapse;}
+      th{background:#2a1800;color:#f5d890;padding:8px;text-align:left;}
+      .header{display:flex;justify-content:space-between;margin-bottom:20px;align-items:flex-start;}
+      .company{font-size:22px;font-weight:700;color:#2a1800;}
+      .sub{font-size:12px;color:#666;margin-top:2px;}
+      .proforma-title{background:#f5d890;padding:8px 20px;border-radius:4px;font-weight:700;font-size:14px;color:#2a1800;}
+      .party-box{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:14px;margin-bottom:16px;}
+      .total-row td{font-weight:700;background:#fffdf5;}
+      .grand-row td{font-weight:700;font-size:15px;background:#f5d890;color:#2a1800;}
+      .share-btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;}
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="company">🌿 Onam Agarbathi Pvt. Ltd.</div>
+        <div class="sub">35-36/70-71, N.S. Palya, Opp. Bannerghatta Road, Bangalore 560076</div>
+        <div class="sub">GSTIN: 29AAACO2213Q1Z8 · Mobile: 9483850822</div>
+        <div class="sub">Email: customercare@onamagarbathi.com</div>
+      </div>
+      <div class="proforma-title">PROFORMA INVOICE</div>
+    </div>
+
+    <div class="party-box">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-weight:700;color:#2a1800;margin-bottom:6px">Bill To:</div>
+          <div style="font-size:15px;font-weight:700">${customer}</div>
+          ${address?`<div style="font-size:13px;color:#555;margin-top:4px">${address}</div>`:""}
+          ${phone?`<div style="font-size:13px">📱 ${phone}</div>`:""}
+          ${gstin?`<div style="font-size:12px;color:#777">GSTIN: ${gstin}</div>`:""}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;color:#777">Date: ${new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</div>
+          <div style="font-size:12px;color:#777;margin-top:4px">Valid: 7 days</div>
+          <div style="font-size:12px;color:#777;margin-top:4px">Logged by: ${CURRENT_USER.name}</div>
+        </div>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr>
+        <th>#</th><th>Product</th><th style="text-align:center">Qty</th>
+        <th style="text-align:right">Rate/Case</th><th style="text-align:right">Taxable</th>
+        <th style="text-align:center">GST%</th><th style="text-align:right">GST Amt</th>
+        <th style="text-align:right">Total</th>
+      </tr></thead>
+      <tbody>
+        ${rows}
+        <tr class="total-row">
+          <td colspan="4" style="padding:8px;border:1px solid #ddd;text-align:right">Subtotal</td>
+          <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${grandBase.toFixed(2)}</td>
+          <td style="padding:8px;border:1px solid #ddd"></td>
+          <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${grandGST.toFixed(2)}</td>
+          <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${grandTotal.toFixed(2)}</td>
+        </tr>
+        <tr class="grand-row">
+          <td colspan="7" style="padding:10px;border:1px solid #ddd;text-align:right">GRAND TOTAL</td>
+          <td style="padding:10px;border:1px solid #ddd;text-align:right;font-size:16px">₹${grandTotal.toFixed(2)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    ${notes?`<div style="margin-top:14px;padding:10px;background:#fffdf5;border-radius:6px;font-size:13px"><b>Notes:</b> ${notes}</div>`:""}
+    ${photo?`<div style="margin-top:14px"><img src="${photo.data}" style="max-width:100%;border-radius:8px;border:1px solid #ddd"/></div>`:""}
+
+    <div style="margin-top:16px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:12px;color:#666">
+      Terms: Payment within 30 days · Goods once sold cannot be returned · Subject to Bangalore jurisdiction
+    </div>
+
+    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'Proforma - ${customer}',text:document.body.innerText});}else{window.print();}">
+      📤 Share / Save as PDF
+    </button>
+    </body></html>`);
+    w.document.close();
+  };
+
+  const handleSave=()=>{
+    if(!customer.trim()){alert("Please enter customer name");return;}
+    const entry={
+      id:genId(),
+      date:today(),
+      title:`Order — ${customer}`,
+      category:"Sales - Order",
+      taskType:"Orders Received",
+      person:customer,
+      amount:`₹${grandTotal.toFixed(0)}`,
+      paymentStatus:"Payment Pending",
+      loggedBy:URL_USER,
+      loggedByName:CURRENT_USER.name,
+      notes:`Customer: ${customer}${address?" | "+address:""}${phone?" | Ph:"+phone:""}${gstin?" | GSTIN:"+gstin:""}\nItems: ${items.map(it=>`${it.name} x${it.qty} @₹${it.price}`).join(", ")}\nTotal: ₹${grandTotal.toFixed(0)} (incl GST)${notes?"\n"+notes:""}`,
+      attachments:photo?[photo]:[],
+      tags:["Pending"],
+      createdAt:new Date().toISOString()
+    };
+    onSave(entry);
+  };
+
+  const G2={display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10};
+
+  return<div>
+    <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>📦 New Order / Proforma</h2>
+
+    {/* Customer Details */}
+    <div style={{background:"#fffdf5",border:"1.5px solid #e8dcc8",borderRadius:10,padding:13,marginBottom:12}}>
+      <div style={{fontWeight:700,fontSize:12,color:"#7a5a20",marginBottom:8}}>👤 Customer Details</div>
+      <div style={{marginBottom:8}}><label className="lbl">Customer Name *</label>
+        <input className="inp" value={customer} placeholder="Customer / Shop name" onChange={e=>setCustomer(e.target.value)}/></div>
+      <div style={G2}>
+        <div><label className="lbl">Phone</label><input className="inp" value={phone} placeholder="Mobile number" onChange={e=>setPhone(e.target.value)}/></div>
+        <div><label className="lbl">GSTIN</label><input className="inp" value={gstin} placeholder="29AAACO..." onChange={e=>setGstin(e.target.value)}/></div>
+      </div>
+      <div><label className="lbl">Address</label><input className="inp" value={address} placeholder="Shop / delivery address" onChange={e=>setAddress(e.target.value)}/></div>
+    </div>
+
+    {/* Order Items */}
+    <div style={{background:"#f0faf0",border:"1.5px solid #a8d8a8",borderRadius:10,padding:13,marginBottom:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+        <div style={{fontWeight:700,fontSize:12,color:"#1a5a1a"}}>📦 Order Items</div>
+        <button onClick={addItem} style={{padding:"4px 12px",borderRadius:8,border:"none",background:"#1a7a1a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>＋ Add</button>
+      </div>
+      {items.map((it,i)=><div key={i} style={{background:"#fff",borderRadius:8,padding:10,marginBottom:8,border:"1px solid #c8e8c8"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+          <span style={{fontSize:11,fontWeight:700,color:"#1a5a1a"}}>Item {i+1}</span>
+          {items.length>1&&<button onClick={()=>removeItem(i)} style={{background:"none",border:"none",color:"#c00",cursor:"pointer",fontSize:16}}>×</button>}
+        </div>
+        <div style={{marginBottom:6}}>
+          <select className="inp" value={it.productId} onChange={e=>selectProduct(i,e.target.value)} style={{marginBottom:6}}>
+            <option value="">— Select product —</option>
+            {PRODUCTS.map(p=><option key={p.id} value={p.id}>{p.name} {p.pack?`(${p.pack})`:""}</option>)}
+          </select>
+          {it.productId==="custom"&&<input className="inp" value={it.name} placeholder="Product name" onChange={e=>updateItem(i,"name",e.target.value)}/>}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          <div><label className="lbl" style={{fontSize:9}}>Qty (Cases)</label>
+            <input className="inp" type="number" value={it.qty} min={1} onChange={e=>updateItem(i,"qty",parseInt(e.target.value)||1)}/></div>
+          <div><label className="lbl" style={{fontSize:9}}>Rate/Case ₹</label>
+            <input className="inp" type="number" value={it.price} onChange={e=>updateItem(i,"price",parseFloat(e.target.value)||0)}/></div>
+          <div><label className="lbl" style={{fontSize:9}}>Amount</label>
+            <div style={{padding:"8px 12px",background:"#f0faf0",borderRadius:8,fontSize:13,fontWeight:700,color:"#1a5a1a"}}>₹{(it.qty*(it.price||0)).toFixed(0)}</div></div>
+        </div>
+      </div>)}
+
+      {/* Totals */}
+      <div style={{background:"#2a1800",borderRadius:8,padding:"10px 14px",color:"#f5d890"}}>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+          <span>Taxable Amount</span><span>₹{grandBase.toFixed(2)}</span>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+          <span>GST (5%)</span><span>₹{grandGST.toFixed(2)}</span>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",fontSize:16,fontWeight:700,borderTop:"1px solid rgba(255,255,255,.2)",paddingTop:6,marginTop:4}}>
+          <span>Grand Total</span><span>₹{grandTotal.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Photo */}
+    <div style={{marginBottom:12}}>
+      <label className="lbl">📷 Attach Photo (shop, signature, PO)</label>
+      <button onClick={()=>{const i=document.createElement("input");i.type="file";i.accept="image/*";i.onchange=async e=>{if(e.target.files[0]){const a=await fileToB64(e.target.files[0]);setPhoto(a);}};i.click();}}
+        style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#3a5a8a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700,marginRight:8}}>📷 Photo</button>
+      {photo&&<span style={{fontSize:11,color:"#1a5a1a"}}>✅ Photo attached</span>}
+    </div>
+
+    <div style={{marginBottom:12}}><label className="lbl">Notes</label>
+      <textarea className="inp" value={notes} rows={2} placeholder="Special instructions, delivery date, remarks…" onChange={e=>setNotes(e.target.value)} style={{resize:"none"}}/></div>
+
+    <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
+      <button className="bgh" onClick={onClose}>Cancel</button>
+      <button onClick={generateProforma} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1a5a8a,#0a3a6a)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>📄 Proforma</button>
+      <button className="bg" onClick={handleSave}>💾 Save Order</button>
+    </div>
+  </div>;
+}
+
+
 function exportCSV(entries){
   const h=["ID","Date","Month","Title","Category","Task Type","Person","Vendor","Account","Financial","Payment Status","Property","Chemical","Amount","Tags","Notes","Reminder","Recurring","Link","Created At"];
   const rows=entries.map(e=>[e.id,e.date,e.month,e.title,e.category,e.taskType,e.person,e.vendor,e.account,e.financialType,e.paymentStatus,e.property,e.chemical,e.amount,(e.tags||[]).join("; "),e.notes,e.reminder,e.isRecurring?"Yes":"",e.link,e.createdAt].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
@@ -965,6 +1200,7 @@ function App(){
   const [saving,setSaving]=useState(false);
   const [syncStatus,setSyncStatus]=useState("");
   const [showForm,setShowForm]=useState(false);
+  const [showOrder,setShowOrder]=useState(false);
   const [editE,setEditE]=useState(null);
   const [viewE,setViewE]=useState(null);
   const [showDupes,setShowDupes]=useState(false);
@@ -1196,6 +1432,7 @@ function App(){
           <button onClick={()=>setHideDone(h=>!h)} style={{...fSel,background:hideDone?"rgba(200,255,200,.15)":"rgba(255,255,255,.08)",color:hideDone?"#90f090":"#f0cc80",border:"1.5px solid "+(hideDone?"#4a9a4a":"#c8a060"),fontSize:11,fontWeight:600}}>{hideDone?"All":"Hide✅"}</button>
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
+          <button onClick={()=>setShowOrder(true)} style={{padding:"7px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1a5a8a,#0a3a6a)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,marginRight:4}}>📦 Order</button>
           <button onClick={()=>{setEditE(null);setShowForm(true);}} style={{padding:"7px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#e8a020,#c07010)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,boxShadow:"0 4px 14px rgba(200,120,0,.35)"}}>+ New</button>
         </div>
       </div>
@@ -1313,6 +1550,9 @@ function App(){
     <Modal open={showAI} onClose={()=>setShowAI(false)} wide><AIPanel entries={entries} onClose={()=>setShowAI(false)}/></Modal>
     <Modal open={showDD} onClose={()=>setShowDD(false)} wide><DropdownManager dropdowns={dropdowns} onSave={saveDropdowns} onClose={()=>setShowDD(false)}/></Modal>
     <Modal open={showShare} onClose={()=>setShowShare(false)} wide><SharePanel/></Modal>
+    <Modal open={showOrder} onClose={()=>setShowOrder(false)} wide>
+      <OrderForm onSave={(entry)=>{saveEntry(entry);setShowOrder(false);}} onClose={()=>setShowOrder(false)} dropdowns={dropdowns}/>
+    </Modal>
   </div>;
 }
 
