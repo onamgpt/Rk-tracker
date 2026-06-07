@@ -1114,7 +1114,7 @@ function OrderForm({onSave,onClose,dropdowns}){
 
 function exportCSV(entries){
   const h=["ID","Date","Month","Title","Category","Task Type","Person","Vendor","Account","Financial","Payment Status","Property","Chemical","Amount","Tags","Notes","Reminder","Recurring","Link","Created At"];
-  const rows=entries.map(e=>[e.id,e.date,e.month,e.title,e.category,e.taskType,e.person,e.vendor,e.account,e.financialType,e.paymentStatus,e.property,e.chemical,e.amount,(e.tags||[]).join("; "),e.notes,e.reminder,e.isRecurring?"Yes":"",e.link,e.createdAt].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
+  const rows=entries.map(e=>[e.id,e.date,e.month,e.title,e.category,e.taskType,e.person,e.vendor,e.account,e.financialType,e.paymentStatus,e.property,e.chemical,e.amount,(e.tags||[]).join("; "),e.notes,e.reminder,e.isRecurring?"Yes":"",e.link,e.createdAt].map(v=>'"'+String(v||"").replace(/"/g,'""')+'"'));
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([[h,...rows].map(r=>r.join(",")).join("\n")],{type:"text/csv"}));
   a.download="rk-tracker-"+today()+".csv";a.click();
