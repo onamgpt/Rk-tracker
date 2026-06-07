@@ -575,7 +575,7 @@ function ScanBill({onResult,onMultiResult}){
     </div>
     {scanMsg&&<div style={{fontSize:12,color:"#1a5a1a",fontWeight:600,marginBottom:4}}>{scanMsg}</div>}
     {progress.total>0&&<div style={{background:"#c8e8c8",borderRadius:20,height:6,marginBottom:6}}>
-      <div style={{background:"#1a7a1a",borderRadius:20,height:6,width:`${(progress.current/progress.total)*100}%`,transition:"width .3s"}}/>
+      <div style={{background:"#1a7a1a",borderRadius:20,height:6,width:((progress.current/progress.total)*100)+"%",transition:"width .3s"}}/>
     </div>}
     <div style={{fontSize:10,color:"#5a8a5a"}}>📚 Multi Bills: select up to 10 photos at once → all auto-filled</div>
   </div>;
