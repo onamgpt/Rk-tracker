@@ -39,10 +39,31 @@ const {useState,useEffect,useRef,useMemo,useCallback}=React;
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbykR0d_SVgZsKVG98IDG7yLQz_o0OvlSR7nu8Xk0koKg1PK9BBcdMQPA-XYTABPJ5tp4w/exec";
 const BOT_TOKEN="8852628858:AAHAZ3ZjosHPrEC0OU8fDnRXBNcKnwO2gus";
 const OWNER_CHAT_ID="8632288596";
-// Multi-user support — each user gets their own data
-const URL_USER=new URLSearchParams(window.location.search).get("user")||"main";
+// ── USER CONFIG ──────────────────────────────────────────────────────────────
+const URL_PARAMS_U=new URLSearchParams(window.location.search);
+const URL_USER=URL_PARAMS_U.get("user")||"main";
+
+// Shared business users — their data syncs to YOUR Google Sheet
+const SHARED_USERS=["main","prakash","maadhu","virupaksha","gopal"];
+const IS_SHARED=SHARED_USERS.includes(URL_USER.toLowerCase());
+
+// Private users — their data goes to separate storage
+const IS_PRIVATE=!IS_SHARED;
+
 const LS_CACHE="rk_cache_v2_"+URL_USER;
 const LS_DD="rk_dropdowns_v2_"+URL_USER;
+
+// User display names and colors
+const USER_CONFIG={
+  main:    {name:"Krr",      color:"#2a1800", bg:"#f5d890", admin:true},
+  prakash: {name:"Prakash",  color:"#0a3a6a", bg:"#c8e8ff", admin:false},
+  maadhu:  {name:"Maadhu",   color:"#1a4a1a", bg:"#c8f0c8", admin:false},
+  virupaksha:{name:"Virupaksha",color:"#4a1a4a",bg:"#e8c8f0",admin:false},
+  gopal:   {name:"Gopal Reddy",color:"#4a2a0a",bg:"#f0d8c8",admin:false},
+  wife:    {name:"Wife",     color:"#6a1a4a", bg:"#f8c8e8", admin:false},
+  daughter:{name:"Daughter", color:"#1a4a6a", bg:"#c8e0ff", admin:false},
+};
+const CURRENT_USER=USER_CONFIG[URL_USER.toLowerCase()]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
 const URL_PARAMS=new URLSearchParams(window.location.search);
 const VIEW_PERSON=URL_PARAMS.get("person");
@@ -882,33 +903,56 @@ function App(){
 
   useEffect(()=>{saveDD(dropdowns);},[dropdowns]);
 
-  // BULLETPROOF: localStorage is master, Sheets is backup only
+  // BULLETPROOF SYNC — localStorage primary, Sheets backup
+  // Shared users also pull ALL team entries from Sheets
   useEffect(()=>{
     const cached=loadCache();
     setEntries(cached);
     setLoading(false);
-    setSyncStatus(cached.length>0?"📱 "+cached.length+" entries loaded":"📱 Ready — tap + New to start");
-    // Push local to sheets silently
-    if(cached.length>0){
-      sheetsAPI("getAll").then(r=>{
-        if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");return;}
+    setSyncStatus(cached.length>0?"📱 "+cached.length+" entries":"📱 Ready");
+
+    sheetsAPI("getAll").then(r=>{
+      if(r.error||!r.entries){
+        setSyncStatus("📴 Offline · "+cached.length+" entries safe");
+        return;
+      }
+      if(CURRENT_USER.admin){
+        // Admin (Krr) — see ALL entries from all team members
+        const sheetsMap={};
+        r.entries.forEach(e=>{sheetsMap[e.id]=e;});
+        const localMap={};
+        cached.forEach(e=>{localMap[e.id]=e;});
+        // Local takes priority for same entry
+        const merged=Object.values({...sheetsMap,...localMap});
+        merged.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+        setEntries(merged);
+        saveCache(merged);
+        setSyncStatus("✅ "+merged.length+" entries (team)");
+      } else {
+        // Team member — see only their own entries + push new ones
         const ids=new Set(r.entries.map(e=>e.id));
         const missing=cached.filter(e=>!ids.has(e.id));
-        if(missing.length>0){
-          missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
-          setSyncStatus("✅ "+cached.length+" entries · "+missing.length+" backed up");
-        } else {
-          setSyncStatus("✅ "+cached.length+" entries · all in Sheets");
-        }
-      }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
-    }
-    sheetsAPI("getDropdowns").then(r=>{if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));}).catch(()=>{});
+        missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
+        setSyncStatus("✅ "+cached.length+" entries synced");
+      }
+    }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
+
+    sheetsAPI("getDropdowns").then(r=>{
+      if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));
+    }).catch(()=>{});
   },[]);
 
   const saveEntry=async(entry)=>{
     setSaving(true);
-    setEntries(p=>{const ex=p.find(x=>x.id===entry.id);const updated=ex?p.map(x=>x.id===entry.id?entry:x):[entry,...p];saveCache(updated);return updated;});
-    const r=await sheetsAPI("save",{entry});
+    // Auto-tag entry with current user
+    const taggedEntry={...entry,
+      loggedBy:URL_USER,
+      loggedByName:CURRENT_USER.name,
+      // Non-admin users auto-set their person field
+      person:entry.person||(URL_USER!=="main"?CURRENT_USER.name:"")
+    };
+    setEntries(p=>{const ex=p.find(x=>x.id===taggedEntry.id);const updated=ex?p.map(x=>x.id===taggedEntry.id?taggedEntry:x):[taggedEntry,...p];saveCache(updated);return updated;});
+    const r=await sheetsAPI("save",{entry:taggedEntry});
     setSyncStatus(r.error?"⚠️ Saved locally only":"✅ Saved to Google Sheets");
     if(entry.person&&!dropdowns.persons.includes(entry.person))addToDropdown("persons",entry.person);
     if(entry.vendor&&!dropdowns.vendors.includes(entry.vendor))addToDropdown("vendors",entry.vendor);
@@ -1054,7 +1098,10 @@ function App(){
     <div style={{background:"linear-gradient(135deg,#2a1800,#5a3800 50%,#3a2000)",padding:"12px 12px 10px",boxShadow:"0 4px 24px rgba(0,0,0,.3)",position:"sticky",top:0,zIndex:50}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,marginBottom:10}}>
         <div>
-          <h1 style={{margin:0,fontSize:19,fontWeight:700,color:"#f5d890"}}>📋 RK Life Tracker</h1>
+          <h1 style={{margin:0,fontSize:19,fontWeight:700,color:"#f5d890"}}>
+            📋 RK Life Tracker
+            {URL_USER!=="main"&&<span style={{fontSize:12,marginLeft:8,background:CURRENT_USER.bg,color:CURRENT_USER.color,borderRadius:20,padding:"2px 10px",fontWeight:700}}>{CURRENT_USER.name}</span>}
+          </h1>
           <div style={{fontSize:10,color:"#c8a860",marginTop:2,display:"flex",flexWrap:"wrap",gap:5,alignItems:"center"}}>
             <span>{entries.length} total · {filtered.length} shown</span>
             {overdueN>0&&<span style={{background:"#c00",color:"#fff",borderRadius:20,padding:"1px 7px",fontSize:9,fontWeight:700}}>⏰ {overdueN}</span>}
@@ -1118,6 +1165,7 @@ function App(){
                   {e.person&&<div style={{color:"#3a5a8a",fontSize:10}}>👤 {e.person}</div>}
                   {e.vendor&&<div style={{color:"#5a3a8a",fontSize:10}}>🏭 {e.vendor}</div>}
                   {e.property&&<div style={{color:"#5a3a5a",fontSize:9}}>🏠 {e.property}</div>}
+                  {e.loggedBy&&e.loggedBy!=="main"&&<div style={{fontSize:9,background:USER_CONFIG[e.loggedBy]?.bg||"#eee",color:USER_CONFIG[e.loggedBy]?.color||"#444",borderRadius:10,padding:"1px 6px",display:"inline-block",marginTop:2}}>{USER_CONFIG[e.loggedBy]?.name||e.loggedBy}</div>}
                 </td>
                 <td style={{padding:"7px 8px",fontSize:11,minWidth:85}}>
                   {e.account&&<div style={{color:"#3a6000",fontWeight:600,fontSize:10,marginBottom:1}}>🏦 {e.account}</div>}
