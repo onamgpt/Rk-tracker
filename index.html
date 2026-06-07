@@ -968,96 +968,47 @@ function OrderForm({onSave,onClose,dropdowns}){
 
   const generateProforma=()=>{
     const w=window.open("","_blank");
-    const rows=items.map((it,i)=>`
-      <tr>
-        <td style="padding:8px;border:1px solid #ddd">${i+1}</td>
-        <td style="padding:8px;border:1px solid #ddd">${it.name||"Item"}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.qty}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${(it.price||0).toFixed(2)}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${totals[i].base.toFixed(2)}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:center">${it.gst}%</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${totals[i].gstAmt.toFixed(2)}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:right;font-weight:700">₹${totals[i].total.toFixed(2)}</td>
-      </tr>`).join("");
-
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <title>Proforma - ${customer}</title>
-    <style>
-      body{font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto;color:#222;}
-      @media print{body{padding:5px;}}
-      table{width:100%;border-collapse:collapse;}
-      th{background:#2a1800;color:#f5d890;padding:8px;text-align:left;}
-      .header{display:flex;justify-content:space-between;margin-bottom:20px;align-items:flex-start;}
-      .company{font-size:22px;font-weight:700;color:#2a1800;}
-      .sub{font-size:12px;color:#666;margin-top:2px;}
-      .proforma-title{background:#f5d890;padding:8px 20px;border-radius:4px;font-weight:700;font-size:14px;color:#2a1800;}
-      .party-box{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:14px;margin-bottom:16px;}
-      .total-row td{font-weight:700;background:#fffdf5;}
-      .grand-row td{font-weight:700;font-size:15px;background:#f5d890;color:#2a1800;}
-      .share-btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;}
-    </style></head><body>
-    <div class="header">
-      <div>
-        <div class="company">🌿 Onam Agarbathi Pvt. Ltd.</div>
-        <div class="sub">35-36/70-71, N.S. Palya, Opp. Bannerghatta Road, Bangalore 560076</div>
-        <div class="sub">GSTIN: 29AAACO2213Q1Z8 · Mobile: 9483850822</div>
-        <div class="sub">Email: customercare@onamagarbathi.com</div>
-      </div>
-      <div class="proforma-title">PROFORMA INVOICE</div>
-    </div>
-
-    <div class="party-box">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div>
-          <div style="font-weight:700;color:#2a1800;margin-bottom:6px">Bill To:</div>
-          <div style="font-size:15px;font-weight:700">${customer}</div>
-          ${address?`<div style="font-size:13px;color:#555;margin-top:4px">${address}</div>`:""}
-          ${phone?`<div style="font-size:13px">📱 ${phone}</div>`:""}
-          ${gstin?`<div style="font-size:12px;color:#777">GSTIN: ${gstin}</div>`:""}
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:12px;color:#777">Date: ${new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</div>
-          <div style="font-size:12px;color:#777;margin-top:4px">Valid: 7 days</div>
-          <div style="font-size:12px;color:#777;margin-top:4px">Logged by: ${CURRENT_USER.name}</div>
-        </div>
-      </div>
-    </div>
-
-    <table>
-      <thead><tr>
-        <th>#</th><th>Product</th><th style="text-align:center">Qty</th>
-        <th style="text-align:right">Rate/Case</th><th style="text-align:right">Taxable</th>
-        <th style="text-align:center">GST%</th><th style="text-align:right">GST Amt</th>
-        <th style="text-align:right">Total</th>
-      </tr></thead>
-      <tbody>
-        ${rows}
-        <tr class="total-row">
-          <td colspan="4" style="padding:8px;border:1px solid #ddd;text-align:right">Subtotal</td>
-          <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${grandBase.toFixed(2)}</td>
-          <td style="padding:8px;border:1px solid #ddd"></td>
-          <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${grandGST.toFixed(2)}</td>
-          <td style="padding:8px;border:1px solid #ddd;text-align:right">₹${grandTotal.toFixed(2)}</td>
-        </tr>
-        <tr class="grand-row">
-          <td colspan="7" style="padding:10px;border:1px solid #ddd;text-align:right">GRAND TOTAL</td>
-          <td style="padding:10px;border:1px solid #ddd;text-align:right;font-size:16px">₹${grandTotal.toFixed(2)}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    ${notes?`<div style="margin-top:14px;padding:10px;background:#fffdf5;border-radius:6px;font-size:13px"><b>Notes:</b> ${notes}</div>`:""}
-    ${photo?`<div style="margin-top:14px"><img src="${photo.data}" style="max-width:100%;border-radius:8px;border:1px solid #ddd"/></div>`:""}
-
-    <div style="margin-top:16px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:12px;color:#666">
-      Terms: Payment within 30 days · Goods once sold cannot be returned · Subject to Bangalore jurisdiction
-    </div>
-
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'Proforma - ${customer}',text:document.body.innerText});}else{window.print();}">
-      📤 Share / Save as PDF
-    </button>
-    </body></html>`);
+    const rows=items.map((it,i)=>
+      "<tr><td style='padding:8px;border:1px solid #ddd'>"+(i+1)+"</td>"+
+      "<td style='padding:8px;border:1px solid #ddd'>"+(it.name||"Item")+"</td>"+
+      "<td style='padding:8px;border:1px solid #ddd;text-align:center'>"+it.qty+"</td>"+
+      "<td style='padding:8px;border:1px solid #ddd;text-align:right'>"+String.fromCharCode(8377)+(it.price||0).toFixed(2)+"</td>"+
+      "<td style='padding:8px;border:1px solid #ddd;text-align:right'>"+String.fromCharCode(8377)+totals[i].base.toFixed(2)+"</td>"+
+      "<td style='padding:8px;border:1px solid #ddd;text-align:center'>"+it.gst+"%</td>"+
+      "<td style='padding:8px;border:1px solid #ddd;text-align:right'>"+String.fromCharCode(8377)+totals[i].gstAmt.toFixed(2)+"</td>"+
+      "<td style='padding:8px;border:1px solid #ddd;text-align:right;font-weight:700'>"+String.fromCharCode(8377)+totals[i].total.toFixed(2)+"</td></tr>"
+    ).join("");
+    const R=String.fromCharCode(8377);
+    const html="<!DOCTYPE html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>Proforma - "+customer+"</title>"+
+    "<style>body{font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto;}"+
+    "table{width:100%;border-collapse:collapse;}"+
+    "th{background:#2a1800;color:#f5d890;padding:8px;text-align:left;}"+
+    ".grand{font-weight:700;font-size:15px;background:#f5d890;color:#2a1800;}"+
+    ".share-btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;}"+
+    "</style></head><body>"+
+    "<div style='display:flex;justify-content:space-between;margin-bottom:20px;align-items:flex-start'>"+
+    "<div><div style='font-size:22px;font-weight:700;color:#2a1800'>🌿 Onam Agarbathi Pvt. Ltd.</div>"+
+    "<div style='font-size:12px;color:#666'>35-36/70-71, N.S. Palya, Opp. Bannerghatta Road, Bangalore 560076</div>"+
+    "<div style='font-size:12px;color:#666'>GSTIN: 29AAACO2213Q1Z8 · Ph: 9483850822</div></div>"+
+    "<div style='background:#f5d890;padding:8px 20px;border-radius:4px;font-weight:700;color:#2a1800'>PROFORMA INVOICE</div></div>"+
+    "<div style='background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:14px;margin-bottom:16px'>"+
+    "<div style='font-weight:700;font-size:15px'>"+customer+"</div>"+
+    (address?"<div style='font-size:13px;color:#555;margin-top:4px'>"+address+"</div>":"")+
+    (phone?"<div style='font-size:13px'>📱 "+phone+"</div>":"")+
+    (gstin?"<div style='font-size:12px;color:#777'>GSTIN: "+gstin+"</div>":"")+
+    "<div style='font-size:12px;color:#777;margin-top:4px'>Date: "+new Date().toLocaleDateString("en-IN")+" · Logged by: "+CURRENT_USER.name+"</div></div>"+
+    "<table><thead><tr>"+
+    "<th>#</th><th>Product</th><th>Qty</th><th>Rate</th><th>Taxable</th><th>GST%</th><th>GST Amt</th><th>Total</th>"+
+    "</tr></thead><tbody>"+rows+
+    "<tr class='grand'><td colspan='7' style='padding:10px;border:1px solid #ddd;text-align:right'>GRAND TOTAL</td>"+
+    "<td style='padding:10px;border:1px solid #ddd;text-align:right;font-size:16px'>"+R+grandTotal.toFixed(2)+"</td></tr>"+
+    "</tbody></table>"+
+    (notes?"<div style='margin-top:14px;padding:10px;background:#fffdf5;border-radius:6px;font-size:13px'><b>Notes:</b> "+notes+"</div>":"")+
+    "<div style='margin-top:14px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:12px;color:#666'>"+
+    "Terms: Payment within 30 days · Subject to Bangalore jurisdiction</div>"+
+    "<button class='share-btn' onclick='window.print()'>📤 Share / Save as PDF</button>"+
+    "</body></html>";
+    w.document.write(html);
     w.document.close();
   };
 
