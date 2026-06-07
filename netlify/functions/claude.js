@@ -16,27 +16,35 @@ exports.handler = async (event) => {
       res.on("end", () => resolve(data));
     });
     req.on("error", reject);
+    req.setTimeout(25000, () => { req.destroy(); reject(new Error("Request timeout")); });
     req.write(body);
     req.end();
   });
 
   try {
-    const { prompt, system, imageBase64, imageType } = JSON.parse(event.body || "{}");
+    const body = JSON.parse(event.body || "{}");
+    const { prompt, system, imageBase64, imageType } = body;
+    
     const p1 = "sk-ant-api03-plPEHQK-xn1jf0HMvx3ffBO";
     const p2 = "d81tj721UkMowLoxqE2DkFY_C5Etb841MnKeJ-fn97aG6oHMhVX";
     const p3 = "byXXzlpeEIXw-7uMffwAA";
     const apiKey = process.env.ANTHROPIC_API_KEY || (p1+p2+p3);
 
     const content = [];
-    if (imageBase64) {
-      content.push({ type: "image", source: { type: "base64", media_type: imageType || "image/jpeg", data: imageBase64 } });
+    if (imageBase64 && imageBase64.length > 0) {
+      // Limit image size - truncate if too large
+      const imgData = imageBase64.length > 1000000 ? imageBase64.slice(0, 1000000) : imageBase64;
+      content.push({ 
+        type: "image", 
+        source: { type: "base64", media_type: imageType || "image/jpeg", data: imgData } 
+      });
     }
     content.push({ type: "text", text: prompt || "Hello" });
 
     const reqBody = JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 1500,
-      system: system || "You are a helpful assistant for Onam Agarbathi Pvt. Ltd.",
+      system: system || "You are a helpful assistant for Onam Agarbathi Pvt. Ltd., a Bangalore incense manufacturer.",
       messages: [{ role: "user", content }]
     });
 
@@ -53,7 +61,10 @@ exports.handler = async (event) => {
     };
 
     const raw = await makeRequest(options, reqBody);
-    const d = JSON.parse(raw);
+    let d;
+    try { d = JSON.parse(raw); } 
+    catch(e) { return { statusCode: 500, headers: h, body: JSON.stringify({ error: "Parse error: " + raw.slice(0,200) }) }; }
+    
     if (d.error) return { statusCode: 500, headers: h, body: JSON.stringify({ error: d.error.message }) };
     return { statusCode: 200, headers: h, body: JSON.stringify({ text: d.content?.[0]?.text || "" }) };
   } catch (e) {
