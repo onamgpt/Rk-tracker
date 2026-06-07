@@ -1486,7 +1486,7 @@ function App(){
         </div>
         {viewE.notes&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:5}}>Notes</div><div style={{background:"#fffdf5",border:"1px solid #e8dcc8",borderRadius:8,padding:"9px 13px",fontSize:13,whiteSpace:"pre-wrap",lineHeight:1.6}}>{viewE.notes}</div></div>}
         {viewE.link&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:4}}>Link</div><a href={viewE.link} target="_blank" rel="noreferrer" style={{color:"#0057b0",fontSize:13,wordBreak:"break-all"}}>{viewE.linkLabel||viewE.link}</a></div>}
-        {viewE.reminder&&<div style={{background:isOverdue(viewE.reminder)?"#fff0f0":"#e8f4fb",border:`1.5px solid ${isOverdue(viewE.reminder)?"#f5a8ab":"#b0d8f0"}`,borderRadius:9,padding:"9px 13px",marginBottom:12}}>
+        {viewE.reminder&&<div style={{background:isOverdue(viewE.reminder)?"#fff0f0":"#e8f4fb",border:(isOverdue(viewE.reminder)?"1.5px solid #f5a8ab":"1.5px solid #b0d8f0"),borderRadius:9,padding:"9px 13px",marginBottom:12}}>
           <span style={{fontSize:13,fontWeight:700,color:isOverdue(viewE.reminder)?"#c00":"#006aaa"}}>📲 {isOverdue(viewE.reminder)?"OVERDUE · ":""}{fmtDT(viewE.reminder)}{viewE.isRecurring&&<span style={{marginLeft:8,fontSize:11,color:"#5a8a30"}}>🔁 Monthly</span>}</span>
           {viewE.reminderNote&&<div style={{fontSize:12,color:"#005a8a",marginTop:3}}>{viewE.reminderNote}</div>}
         </div>}
