@@ -39,8 +39,10 @@ const {useState,useEffect,useRef,useMemo,useCallback}=React;
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbykR0d_SVgZsKVG98IDG7yLQz_o0OvlSR7nu8Xk0koKg1PK9BBcdMQPA-XYTABPJ5tp4w/exec";
 const BOT_TOKEN="8852628858:AAHAZ3ZjosHPrEC0OU8fDnRXBNcKnwO2gus";
 const OWNER_CHAT_ID="8632288596";
-const LS_CACHE="rk_cache_v2";
-const LS_DD="rk_dropdowns_v2";
+// Multi-user support — each user gets their own data
+const URL_USER=new URLSearchParams(window.location.search).get("user")||"main";
+const LS_CACHE="rk_cache_v2_"+URL_USER;
+const LS_DD="rk_dropdowns_v2_"+URL_USER;
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
 const URL_PARAMS=new URLSearchParams(window.location.search);
 const VIEW_PERSON=URL_PARAMS.get("person");
@@ -282,9 +284,29 @@ function TagBadge({tag,onRemove}){
 function Thumb({att,small}){
   const s=small?30:50;
   const b={width:s,height:s,borderRadius:6,border:"1.5px solid #e2d9c8",cursor:"pointer",flexShrink:0,objectFit:"cover",display:"block"};
-  if(att.type?.startsWith("image/"))return<a href={att.data} target="_blank" rel="noreferrer"><img src={att.data} alt={att.name} style={b}/></a>;
+  const openAtt=()=>{
+    if(!att.data)return;
+    // Create blob URL and open
+    try{
+      const byteStr=atob(att.data.split(",")[1]||att.data);
+      const ab=new ArrayBuffer(byteStr.length);
+      const ia=new Uint8Array(ab);
+      for(let i=0;i<byteStr.length;i++)ia[i]=byteStr.charCodeAt(i);
+      const blob=new Blob([ab],{type:att.type||"application/octet-stream"});
+      const url=URL.createObjectURL(blob);
+      window.open(url,"_blank");
+    }catch(e){
+      // Fallback: open data URL directly
+      const w=window.open("","_blank");
+      if(w){w.document.write(`<img src="${att.data}" style="max-width:100%" />`);w.document.close();}
+    }
+  };
+  if(att.type?.startsWith("image/"))return<div onClick={openAtt} style={{...b,overflow:"hidden",cursor:"zoom-in"}}><img src={att.data} alt={att.name||"image"} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
   const p=att.type==="application/pdf";
-  return<a href={att.data} target="_blank" rel="noreferrer" style={{...b,background:p?"#fff0f0":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none",fontSize:small?9:11,color:p?"#b00":"#339",fontWeight:700}}>{p?"PDF":"FILE"}</a>;
+  return<div onClick={openAtt} style={{...b,background:p?"#fff0f0":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:small?9:11,color:p?"#b00":"#339",fontWeight:700,flexDirection:"column",gap:1}}>
+    <span style={{fontSize:small?14:18}}>{p?"📄":"📎"}</span>
+    <span>{p?"PDF":"FILE"}</span>
+  </div>;
 }
 
 function Modal({open,onClose,children,wide}){
@@ -760,11 +782,13 @@ function shareEntry(entry){
 }
 
 function shareEntryHTML(entry){
-  // Generate a printable/shareable HTML card
   const w=window.open("","_blank");
-  const atts=(entry.attachments||[]).filter(a=>a.data);
+  const atts=(entry.attachments||[]);
   const imgs=atts.filter(a=>a.type?.startsWith("image/"));
   const docs=atts.filter(a=>!a.type?.startsWith("image/"));
+
+  const imgHtml=imgs.map(a=>`<img src="${a.data}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8" onclick="window.open(this.src)" />`).join("");
+  const docHtml=docs.map(a=>`<a href="${a.data}" target="_blank" download="${a.name||"file"}" style="display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0">📄 ${a.name||"Download File"}</a>`).join("");
 
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -773,42 +797,28 @@ function shareEntryHTML(entry){
     body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto;}
     .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12);}
     .header{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px;}
-    .title{font-size:18px;font-weight:700;margin-bottom:4px;}
-    .sub{font-size:11px;color:#c8a860;}
-    .field{display:flex;gap:8px;margin-bottom:8px;font-size:13px;align-items:flex-start;}
-    .val{color:#2a1a00;flex:1;}
-    .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;margin:2px;}
-    .notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;color:#3a2800;margin-top:10px;line-height:1.6;}
-    .imgs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-    .imgs img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1.5px solid #e2d9c8;}
-    .footer{text-align:center;font-size:11px;color:#9a8060;margin-top:14px;}
-    .share-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#c8860a,#a06010);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;font-family:Georgia,serif;}
+    .field{display:flex;gap:8px;margin-bottom:8px;font-size:13px;}
+    .notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;line-height:1.6;}
+    .share-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#c8860a,#a06010);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;}
+    .footer{text-align:center;font-size:11px;color:#9a8060;margin-top:12px;}
+    img{cursor:zoom-in;}
   </style></head><body>
   <div class="card">
     <div class="header">
-      <div class="title">${entry.title}</div>
-      <div class="sub">📅 ${fmtDate(entry.date)}${entry.month?" · "+entry.month:""}${entry.category?" · "+entry.category:""}</div>
+      <div style="font-size:18px;font-weight:700">${entry.title}</div>
+      <div style="font-size:11px;color:#c8a860;margin-top:4px">📅 ${entry.date||""}${entry.category?" · "+entry.category:""}</div>
     </div>
-    ${entry.taskType?`<div class="field"><span>📌</span><span class="val">${entry.taskType}</span></div>`:""}
-    ${entry.person?`<div class="field"><span>👤</span><span class="val">${entry.person}</span></div>`:""}
-    ${entry.vendor?`<div class="field"><span>🏭</span><span class="val">${entry.vendor}</span></div>`:""}
-    ${entry.account?`<div class="field"><span>🏦</span><span class="val">${entry.account}</span></div>`:""}
-    ${entry.amount?`<div class="field"><span>💰</span><span class="val" style="font-weight:700;color:#1a5a00">${entry.amount}</span></div>`:""}
-    ${entry.paymentStatus?`<div class="field"><span>💳</span><span class="val">${entry.paymentStatus}</span></div>`:""}
-    ${entry.property?`<div class="field"><span>🏠</span><span class="val">${entry.property}</span></div>`:""}
-    ${entry.chemical?`<div class="field"><span>🧪</span><span class="val">${entry.chemical}</span></div>`:""}
-    ${entry.reminder?`<div class="field"><span>⏰</span><span class="val">${fmtDT(entry.reminder)}${entry.reminderNote?" — "+entry.reminderNote:""}</span></div>`:""}
-    ${entry.tags?.length?`<div style="margin-bottom:8px">${entry.tags.map(t=>`<span class="tag" style="background:#fff3cd;color:#856404">${t}</span>`).join("")}</div>`:""}
-    ${entry.notes?`<div class="notes">📝 ${entry.notes.replace(/\n/g,"<br/>")}</div>`:""}
-    ${entry.link?`<div class="field" style="margin-top:8px"><span>🔗</span><a href="${entry.link}" style="color:#0057b0;font-size:13px">${entry.linkLabel||entry.link}</a></div>`:""}
-    ${imgs.length?`<div class="imgs">${imgs.map(a=>`<img src="${a.data}" alt="${a.name}"/>`).join("")}</div>`:""}
-    ${docs.length?`<div style="margin-top:8px">${docs.map(a=>`<a href="${a.data}" style="display:inline-block;padding:4px 10px;background:#f0f4ff;border-radius:6px;font-size:12px;color:#339;margin:3px">${a.name}</a>`).join("")}</div>`:""}
-    <div class="footer">🌿 Onam Agarbathi Pvt. Ltd. · RK Life Tracker</div>
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${entry.title}',text:document.body.innerText,url:window.location.href});}else{window.print();}">
-      📤 Share / Save as PDF
-    </button>
-  </div>
-  </body></html>`);
+    ${entry.taskType?`<div class="field"><span>📌</span><span>${entry.taskType}</span></div>`:""}
+    ${entry.person?`<div class="field"><span>👤</span><span>${entry.person}</span></div>`:""}
+    ${entry.vendor?`<div class="field"><span>🏭</span><span>${entry.vendor}</span></div>`:""}
+    ${entry.amount?`<div class="field"><span>💰</span><b style="color:#1a5a00">${entry.amount}</b></div>`:""}
+    ${entry.paymentStatus?`<div class="field"><span>💳</span><span>${entry.paymentStatus}</span></div>`:""}
+    ${entry.notes?`<div class="notes">📝 ${entry.notes}</div>`:""}
+    ${imgHtml?`<div style="margin-top:12px">${imgHtml}</div>`:""}
+    ${docHtml?`<div style="margin-top:8px">${docHtml}</div>`:""}
+    <div class="footer">🌿 Onam Agarbathi Pvt. Ltd. · RK Life Tracker · Read only</div>
+    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${entry.title}',text:document.body.innerText});}else{window.print();}">📤 Share / Save as PDF</button>
+  </div></body></html>`);
   w.document.close();
 }
 
