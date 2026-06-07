@@ -1064,7 +1064,7 @@ function OrderForm({onSave,onClose,dropdowns}){
         <div style={{marginBottom:6}}>
           <select className="inp" value={it.productId} onChange={e=>selectProduct(i,e.target.value)} style={{marginBottom:6}}>
             <option value="">— Select product —</option>
-            {PRODUCTS.map(p=><option key={p.id} value={p.id}>{p.name} {p.pack?`(${p.pack})`:""}</option>)}
+            {PRODUCTS.map(p=><option key={p.id} value={p.id}>{p.name} {p.pack?"("+p.pack+")":""}</option>)}
           </select>
           {it.productId==="custom"&&<input className="inp" value={it.name} placeholder="Product name" onChange={e=>updateItem(i,"name",e.target.value)}/>}
         </div>
