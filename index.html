@@ -80,7 +80,8 @@ const VIEW_PERSON=URL_PARAMS.get("person");
 const VIEW_ACCOUNT=URL_PARAMS.get("account");
 const VIEW_TAG=URL_PARAMS.get("tag");
 const VIEW_CATEGORY=URL_PARAMS.get("category");
-const IS_VIEW_MODE=!!(VIEW_PERSON||VIEW_ACCOUNT||VIEW_TAG||VIEW_CATEGORY);
+// IS_VIEW_MODE only true for explicit share links (not user login links)
+const IS_VIEW_MODE=!!(VIEW_PERSON||VIEW_ACCOUNT||VIEW_TAG||VIEW_CATEGORY)&&!URL_PARAMS.get("user");
 
 // ── DEFAULTS ──────────────────────────────────────────────────────────────────
 const DEFAULT_DD={
