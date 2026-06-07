@@ -647,7 +647,7 @@ function DropdownManager({dropdowns,onSave,onClose}){
       </div>)}
     </div>
     <div style={{display:"flex",gap:8,marginBottom:12}}>
-      <input className="inp" value={newVal} placeholder={`Add to ${KEYS[active]}…`} onChange={e=>setNewVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
+      <input className="inp" value={newVal} placeholder={"Add to "+KEYS[active]+"…"} onChange={e=>setNewVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
       <button onClick={addItem} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#2a7a2a",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>＋</button>
     </div>
     <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
