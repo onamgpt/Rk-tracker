@@ -1025,8 +1025,7 @@ function OrderForm({onSave,onClose,dropdowns}){
       paymentStatus:"Payment Pending",
       loggedBy:URL_USER,
       loggedByName:CURRENT_USER.name,
-      notes:`Customer: ${customer}${address?" | "+address:""}${phone?" | Ph:"+phone:""}${gstin?" | GSTIN:"+gstin:""}\nItems: ${items.map(it=>`${it.name} x${it.qty} @₹${it.price}`).join(", ")}\nTotal: ₹${grandTotal.toFixed(0)} (incl GST)${notes?"\n"+notes:""}`,
-      attachments:photo?[photo]:[],
+      notes:"Customer: "+customer+(address?" | "+address:"")+(phone?" | Ph:"+phone:"")+(gstin?" | GSTIN:"+gstin:"")+"\nItems: "+items.map(it=>it.name+" x"+it.qty+" @₹"+it.price).join(", ")+"\nTotal: ₹"+grandTotal.toFixed(0)+" (incl GST)"+(notes?"\n"+notes:""),      attachments:photo?[photo]:[],
       tags:["Pending"],
       createdAt:new Date().toISOString()
     };
