@@ -884,230 +884,34 @@ function shareEntry(entry){
 function shareEntryHTML(entry){
   const w=window.open("","_blank");
   const atts=(entry.attachments||[]);
-  const imgs=atts.filter(a=>a.type?.startsWith("image/"));
-  const docs=atts.filter(a=>!a.type?.startsWith("image/"));
-
-  const imgHtml=imgs.map(a=>`<img src="${a.data}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8" onclick="window.open(this.src)" />`).join("");
-  const docHtml=docs.map(a=>`<a href="${a.data}" target="_blank" download="${a.name||"file"}" style="display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0">📄 ${a.name||"Download File"}</a>`).join("");
-
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>${entry.title}</title>
-  <style>
-    body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto;}
-    .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12);}
-    .header{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px;}
-    .field{display:flex;gap:8px;margin-bottom:8px;font-size:13px;}
-    .notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;line-height:1.6;}
-    .share-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#c8860a,#a06010);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;}
-    .footer{text-align:center;font-size:11px;color:#9a8060;margin-top:12px;}
-    img{cursor:zoom-in;}
-  </style></head><body>
-  <div class="card">
-    <div class="header">
-      <div style="font-size:18px;font-weight:700">${entry.title}</div>
-      <div style="font-size:11px;color:#c8a860;margin-top:4px">📅 ${entry.date||""}${entry.category?" · "+entry.category:""}</div>
-    </div>
-    ${entry.taskType?`<div class="field"><span>📌</span><span>${entry.taskType}</span></div>`:""}
-    ${entry.person?`<div class="field"><span>👤</span><span>${entry.person}</span></div>`:""}
-    ${entry.vendor?`<div class="field"><span>🏭</span><span>${entry.vendor}</span></div>`:""}
-    ${entry.amount?`<div class="field"><span>💰</span><b style="color:#1a5a00">${entry.amount}</b></div>`:""}
-    ${entry.paymentStatus?`<div class="field"><span>💳</span><span>${entry.paymentStatus}</span></div>`:""}
-    ${entry.notes?`<div class="notes">📝 ${entry.notes}</div>`:""}
-    ${imgHtml?`<div style="margin-top:12px">${imgHtml}</div>`:""}
-    ${docHtml?`<div style="margin-top:8px">${docHtml}</div>`:""}
-    <div class="footer">🌿 Onam Agarbathi Pvt. Ltd. · RK Life Tracker · Read only</div>
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${entry.title}',text:document.body.innerText});}else{window.print();}">📤 Share / Save as PDF</button>
-  </div></body></html>`);
+  const imgs=atts.filter(a=>a.type&&a.type.startsWith("image/"));
+  const docs=atts.filter(a=>!a.type||!a.type.startsWith("image/"));
+  const imgHtml=imgs.map(a=>"<img src='"+a.data+"' style='max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8' onclick='window.open(this.src)' />").join("");
+  const docHtml=docs.map(a=>"<a href='"+a.data+"' target='_blank' download='"+(a.name||"file")+"' style='display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0'>📄 "+(a.name||"Download File")+"</a>").join("");
+  const html="<!DOCTYPE html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>"+entry.title+"</title>"+
+    "<style>body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto;}"+
+    ".card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12);}"+
+    ".header{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px;}"+
+    ".field{display:flex;gap:8px;margin-bottom:8px;font-size:13px;}"+
+    ".notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;line-height:1.6;}"+
+    ".share-btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;}"+
+    "img{cursor:zoom-in;}</style></head><body>"+
+    "<div class='card'>"+
+    "<div class='header'><div style='font-size:18px;font-weight:700'>"+entry.title+"</div>"+
+    "<div style='font-size:11px;color:#c8a860;margin-top:4px'>📅 "+(entry.date||"")+(entry.category?" · "+entry.category:"")+"</div></div>"+
+    (entry.taskType?"<div class='field'><span>📌</span><span>"+entry.taskType+"</span></div>":"")+
+    (entry.person?"<div class='field'><span>👤</span><span>"+entry.person+"</span></div>":"")+
+    (entry.vendor?"<div class='field'><span>🏭</span><span>"+entry.vendor+"</span></div>":"")+
+    (entry.amount?"<div class='field'><span>💰</span><b style='color:#1a5a00'>"+entry.amount+"</b></div>":"")+
+    (entry.paymentStatus?"<div class='field'><span>💳</span><span>"+entry.paymentStatus+"</span></div>":"")+
+    (entry.notes?"<div class='notes'>📝 "+entry.notes+"</div>":"")+
+    (imgHtml?"<div style='margin-top:12px'>"+imgHtml+"</div>":"")+
+    (docHtml?"<div style='margin-top:8px'>"+docHtml+"</div>":"")+
+    "<div style='text-align:center;font-size:11px;color:#9a8060;margin-top:12px'>🌿 Onam Agarbathi Pvt. Ltd. · RK Life Tracker · Read only</div>"+
+    "<button class='share-btn' onclick="if(navigator.share){navigator.share({title:'"+entry.title+"',text:document.body.innerText});}else{window.print();}">📤 Share / Save as PDF</button>"+
+    "</div></body></html>";
+  w.document.write(html);
   w.document.close();
-}
-
-
-
-// ── PRODUCT CATALOG ───────────────────────────────────────────────────────────
-const PRODUCTS = [
-  {id:"sandal75",  name:"Onam Sandal 7.5"",    pack:"240 sticks/case", price:7490.40, gst:5, unit:"Case"},
-  {id:"rose75",    name:"Onam Rose 7.5"",       pack:"240 sticks/case", price:7999.20, gst:5, unit:"Case"},
-  {id:"3frag75",   name:"Onam 3 Fragrance 7.5"",pack:"240 sticks/case", price:8316.00, gst:5, unit:"Case"},
-  {id:"15sticks",  name:"Onam 15 Sticks",        pack:"720 sticks/case", price:4651.20, gst:5, unit:"Case"},
-  {id:"vaishak",   name:"Vaishak Premium",       pack:"12 dozen/case",   price:0,       gst:5, unit:"Case"},
-  {id:"mogra",     name:"Onam Mogra",            pack:"240 sticks/case", price:0,       gst:5, unit:"Case"},
-  {id:"custom",    name:"Other / Custom",         pack:"",               price:0,       gst:5, unit:"Case"},
-];
-
-function OrderForm({onSave,onClose,dropdowns}){
-  const [customer,setCustomer]=useState("");
-  const [address,setAddress]=useState("");
-  const [phone,setPhone]=useState("");
-  const [gstin,setGstin]=useState("");
-  const [items,setItems]=useState([{productId:"",name:"",qty:1,price:0,gst:5}]);
-  const [notes,setNotes]=useState("");
-  const [showProforma,setShowProforma]=useState(false);
-  const [photo,setPhoto]=useState(null);
-
-  const addItem=()=>setItems(p=>[...p,{productId:"",name:"",qty:1,price:0,gst:5}]);
-  const removeItem=i=>setItems(p=>p.filter((_,j)=>j!==i));
-  const updateItem=(i,k,v)=>setItems(p=>p.map((item,j)=>j===i?{...item,[k]:v}:item));
-
-  const selectProduct=(i,pid)=>{
-    const p=PRODUCTS.find(p=>p.id===pid);
-    if(p) updateItem(i,"productId",pid);
-    if(p) updateItem(i,"name",p.name);
-    if(p) updateItem(i,"price",p.price);
-    if(p) updateItem(i,"gst",p.gst);
-  };
-
-  const totals=items.map(it=>{
-    const base=it.qty*(it.price||0);
-    const gstAmt=base*(it.gst||5)/100;
-    return{base,gstAmt,total:base+gstAmt};
-  });
-  const grandBase=totals.reduce((s,t)=>s+t.base,0);
-  const grandGST=totals.reduce((s,t)=>s+t.gstAmt,0);
-  const grandTotal=totals.reduce((s,t)=>s+t.total,0);
-
-  const generateProforma=()=>{
-    const w=window.open("","_blank");
-    const rows=items.map((it,i)=>
-      "<tr><td style='padding:8px;border:1px solid #ddd'>"+(i+1)+"</td>"+
-      "<td style='padding:8px;border:1px solid #ddd'>"+(it.name||"Item")+"</td>"+
-      "<td style='padding:8px;border:1px solid #ddd;text-align:center'>"+it.qty+"</td>"+
-      "<td style='padding:8px;border:1px solid #ddd;text-align:right'>"+String.fromCharCode(8377)+(it.price||0).toFixed(2)+"</td>"+
-      "<td style='padding:8px;border:1px solid #ddd;text-align:right'>"+String.fromCharCode(8377)+totals[i].base.toFixed(2)+"</td>"+
-      "<td style='padding:8px;border:1px solid #ddd;text-align:center'>"+it.gst+"%</td>"+
-      "<td style='padding:8px;border:1px solid #ddd;text-align:right'>"+String.fromCharCode(8377)+totals[i].gstAmt.toFixed(2)+"</td>"+
-      "<td style='padding:8px;border:1px solid #ddd;text-align:right;font-weight:700'>"+String.fromCharCode(8377)+totals[i].total.toFixed(2)+"</td></tr>"
-    ).join("");
-    const R=String.fromCharCode(8377);
-    const html="<!DOCTYPE html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>Proforma - "+customer+"</title>"+
-    "<style>body{font-family:Arial,sans-serif;padding:20px;max-width:800px;margin:0 auto;}"+
-    "table{width:100%;border-collapse:collapse;}"+
-    "th{background:#2a1800;color:#f5d890;padding:8px;text-align:left;}"+
-    ".grand{font-weight:700;font-size:15px;background:#f5d890;color:#2a1800;}"+
-    ".share-btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-top:16px;}"+
-    "</style></head><body>"+
-    "<div style='display:flex;justify-content:space-between;margin-bottom:20px;align-items:flex-start'>"+
-    "<div><div style='font-size:22px;font-weight:700;color:#2a1800'>🌿 Onam Agarbathi Pvt. Ltd.</div>"+
-    "<div style='font-size:12px;color:#666'>35-36/70-71, N.S. Palya, Opp. Bannerghatta Road, Bangalore 560076</div>"+
-    "<div style='font-size:12px;color:#666'>GSTIN: 29AAACO2213Q1Z8 · Ph: 9483850822</div></div>"+
-    "<div style='background:#f5d890;padding:8px 20px;border-radius:4px;font-weight:700;color:#2a1800'>PROFORMA INVOICE</div></div>"+
-    "<div style='background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:14px;margin-bottom:16px'>"+
-    "<div style='font-weight:700;font-size:15px'>"+customer+"</div>"+
-    (address?"<div style='font-size:13px;color:#555;margin-top:4px'>"+address+"</div>":"")+
-    (phone?"<div style='font-size:13px'>📱 "+phone+"</div>":"")+
-    (gstin?"<div style='font-size:12px;color:#777'>GSTIN: "+gstin+"</div>":"")+
-    "<div style='font-size:12px;color:#777;margin-top:4px'>Date: "+new Date().toLocaleDateString("en-IN")+" · Logged by: "+CURRENT_USER.name+"</div></div>"+
-    "<table><thead><tr>"+
-    "<th>#</th><th>Product</th><th>Qty</th><th>Rate</th><th>Taxable</th><th>GST%</th><th>GST Amt</th><th>Total</th>"+
-    "</tr></thead><tbody>"+rows+
-    "<tr class='grand'><td colspan='7' style='padding:10px;border:1px solid #ddd;text-align:right'>GRAND TOTAL</td>"+
-    "<td style='padding:10px;border:1px solid #ddd;text-align:right;font-size:16px'>"+R+grandTotal.toFixed(2)+"</td></tr>"+
-    "</tbody></table>"+
-    (notes?"<div style='margin-top:14px;padding:10px;background:#fffdf5;border-radius:6px;font-size:13px'><b>Notes:</b> "+notes+"</div>":"")+
-    "<div style='margin-top:14px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:12px;color:#666'>"+
-    "Terms: Payment within 30 days · Subject to Bangalore jurisdiction</div>"+
-    "<button class='share-btn' onclick='window.print()'>📤 Share / Save as PDF</button>"+
-    "</body></html>";
-    w.document.write(html);
-    w.document.close();
-  };
-
-  const handleSave=()=>{
-    if(!customer.trim()){alert("Please enter customer name");return;}
-    const entry={
-      id:genId(),
-      date:today(),
-      title:"Order — "+customer,
-      category:"Sales - Order",
-      taskType:"Orders Received",
-      person:customer,
-      amount:"₹"+grandTotal.toFixed(0),
-      paymentStatus:"Payment Pending",
-      loggedBy:URL_USER,
-      loggedByName:CURRENT_USER.name,
-      notes:"Customer: "+customer+(address?" | "+address:"")+(phone?" | Ph:"+phone:"")+(gstin?" | GSTIN:"+gstin:"")+"\nItems: "+items.map(it=>it.name+" x"+it.qty+" @₹"+it.price).join(", ")+"\nTotal: ₹"+grandTotal.toFixed(0)+" (incl GST)"+(notes?"\n"+notes:""),      attachments:photo?[photo]:[],
-      tags:["Pending"],
-      createdAt:new Date().toISOString()
-    };
-    onSave(entry);
-  };
-
-  const G2={display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10};
-
-  return<div>
-    <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>📦 New Order / Proforma</h2>
-
-    {/* Customer Details */}
-    <div style={{background:"#fffdf5",border:"1.5px solid #e8dcc8",borderRadius:10,padding:13,marginBottom:12}}>
-      <div style={{fontWeight:700,fontSize:12,color:"#7a5a20",marginBottom:8}}>👤 Customer Details</div>
-      <div style={{marginBottom:8}}><label className="lbl">Customer Name *</label>
-        <input className="inp" value={customer} placeholder="Customer / Shop name" onChange={e=>setCustomer(e.target.value)}/></div>
-      <div style={G2}>
-        <div><label className="lbl">Phone</label><input className="inp" value={phone} placeholder="Mobile number" onChange={e=>setPhone(e.target.value)}/></div>
-        <div><label className="lbl">GSTIN</label><input className="inp" value={gstin} placeholder="29AAACO..." onChange={e=>setGstin(e.target.value)}/></div>
-      </div>
-      <div><label className="lbl">Address</label><input className="inp" value={address} placeholder="Shop / delivery address" onChange={e=>setAddress(e.target.value)}/></div>
-    </div>
-
-    {/* Order Items */}
-    <div style={{background:"#f0faf0",border:"1.5px solid #a8d8a8",borderRadius:10,padding:13,marginBottom:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontWeight:700,fontSize:12,color:"#1a5a1a"}}>📦 Order Items</div>
-        <button onClick={addItem} style={{padding:"4px 12px",borderRadius:8,border:"none",background:"#1a7a1a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>＋ Add</button>
-      </div>
-      {items.map((it,i)=><div key={i} style={{background:"#fff",borderRadius:8,padding:10,marginBottom:8,border:"1px solid #c8e8c8"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-          <span style={{fontSize:11,fontWeight:700,color:"#1a5a1a"}}>Item {i+1}</span>
-          {items.length>1&&<button onClick={()=>removeItem(i)} style={{background:"none",border:"none",color:"#c00",cursor:"pointer",fontSize:16}}>×</button>}
-        </div>
-        <div style={{marginBottom:6}}>
-          <select className="inp" value={it.productId} onChange={e=>selectProduct(i,e.target.value)} style={{marginBottom:6}}>
-            <option value="">— Select product —</option>
-            {PRODUCTS.map(p=><option key={p.id} value={p.id}>{p.name} {p.pack?"("+p.pack+")":""}</option>)}
-          </select>
-          {it.productId==="custom"&&<input className="inp" value={it.name} placeholder="Product name" onChange={e=>updateItem(i,"name",e.target.value)}/>}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-          <div><label className="lbl" style={{fontSize:9}}>Qty (Cases)</label>
-            <input className="inp" type="number" value={it.qty} min={1} onChange={e=>updateItem(i,"qty",parseInt(e.target.value)||1)}/></div>
-          <div><label className="lbl" style={{fontSize:9}}>Rate/Case ₹</label>
-            <input className="inp" type="number" value={it.price} onChange={e=>updateItem(i,"price",parseFloat(e.target.value)||0)}/></div>
-          <div><label className="lbl" style={{fontSize:9}}>Amount</label>
-            <div style={{padding:"8px 12px",background:"#f0faf0",borderRadius:8,fontSize:13,fontWeight:700,color:"#1a5a1a"}}>₹{(it.qty*(it.price||0)).toFixed(0)}</div></div>
-        </div>
-      </div>)}
-
-      {/* Totals */}
-      <div style={{background:"#2a1800",borderRadius:8,padding:"10px 14px",color:"#f5d890"}}>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
-          <span>Taxable Amount</span><span>₹{grandBase.toFixed(2)}</span>
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
-          <span>GST (5%)</span><span>₹{grandGST.toFixed(2)}</span>
-        </div>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:16,fontWeight:700,borderTop:"1px solid rgba(255,255,255,.2)",paddingTop:6,marginTop:4}}>
-          <span>Grand Total</span><span>₹{grandTotal.toFixed(2)}</span>
-        </div>
-      </div>
-    </div>
-
-    {/* Photo */}
-    <div style={{marginBottom:12}}>
-      <label className="lbl">📷 Attach Photo (shop, signature, PO)</label>
-      <button onClick={()=>{const i=document.createElement("input");i.type="file";i.accept="image/*";i.onchange=async e=>{if(e.target.files[0]){const a=await fileToB64(e.target.files[0]);setPhoto(a);}};i.click();}}
-        style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#3a5a8a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700,marginRight:8}}>📷 Photo</button>
-      {photo&&<span style={{fontSize:11,color:"#1a5a1a"}}>✅ Photo attached</span>}
-    </div>
-
-    <div style={{marginBottom:12}}><label className="lbl">Notes</label>
-      <textarea className="inp" value={notes} rows={2} placeholder="Special instructions, delivery date, remarks…" onChange={e=>setNotes(e.target.value)} style={{resize:"none"}}/></div>
-
-    <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
-      <button className="bgh" onClick={onClose}>Cancel</button>
-      <button onClick={generateProforma} style={{padding:"9px 16px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#1a5a8a,#0a3a6a)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>📄 Proforma</button>
-      <button className="bg" onClick={handleSave}>💾 Save Order</button>
-    </div>
-  </div>;
 }
 
 
