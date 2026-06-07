@@ -1017,7 +1017,7 @@ function OrderForm({onSave,onClose,dropdowns}){
     const entry={
       id:genId(),
       date:today(),
-      title:`Order — ${customer}`,
+      title:"Order — "+customer,
       category:"Sales - Order",
       taskType:"Orders Received",
       person:customer,
