@@ -1021,7 +1021,7 @@ function OrderForm({onSave,onClose,dropdowns}){
       category:"Sales - Order",
       taskType:"Orders Received",
       person:customer,
-      amount:`₹${grandTotal.toFixed(0)}`,
+      amount:"₹"+grandTotal.toFixed(0),
       paymentStatus:"Payment Pending",
       loggedBy:URL_USER,
       loggedByName:CURRENT_USER.name,
