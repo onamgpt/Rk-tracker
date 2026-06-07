@@ -44,7 +44,9 @@ const URL_PARAMS_U=new URLSearchParams(window.location.search);
 const URL_USER=URL_PARAMS_U.get("user")||"main";
 
 // Shared business users — their data syncs to YOUR Google Sheet
-const SHARED_USERS=["main","prakash","maadhu","virupaksha","gopal"];
+const SHARED_USERS=["main","prakash","maadhu","virupaksha","gopal",
+  "sales1","sales2","sales3","sales4","sales5",
+  "sales6","sales7","sales8","sales9","sales10"];
 const IS_SHARED=SHARED_USERS.includes(URL_USER.toLowerCase());
 
 // Private users — their data goes to separate storage
@@ -62,6 +64,17 @@ const USER_CONFIG={
   gopal:   {name:"Gopal Reddy",color:"#4a2a0a",bg:"#f0d8c8",admin:false},
   wife:    {name:"Wife",     color:"#6a1a4a", bg:"#f8c8e8", admin:false},
   daughter:{name:"Daughter", color:"#1a4a6a", bg:"#c8e0ff", admin:false},
+  // Sales team — add names when you know them
+  sales1:  {name:"Sales 1",  color:"#3a5a0a", bg:"#d8f0c8", admin:false},
+  sales2:  {name:"Sales 2",  color:"#5a3a0a", bg:"#f0e0c8", admin:false},
+  sales3:  {name:"Sales 3",  color:"#0a3a5a", bg:"#c8e0f0", admin:false},
+  sales4:  {name:"Sales 4",  color:"#5a0a3a", bg:"#f0c8e0", admin:false},
+  sales5:  {name:"Sales 5",  color:"#3a0a5a", bg:"#e0c8f0", admin:false},
+  sales6:  {name:"Sales 6",  color:"#0a5a3a", bg:"#c8f0e0", admin:false},
+  sales7:  {name:"Sales 7",  color:"#5a5a0a", bg:"#f0f0c8", admin:false},
+  sales8:  {name:"Sales 8",  color:"#0a5a5a", bg:"#c8f0f0", admin:false},
+  sales9:  {name:"Sales 9",  color:"#5a0a0a", bg:"#f0c8c8", admin:false},
+  sales10: {name:"Sales 10", color:"#0a0a5a", bg:"#c8c8f0", admin:false},
 };
 const CURRENT_USER=USER_CONFIG[URL_USER.toLowerCase()]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
@@ -74,7 +87,8 @@ const IS_VIEW_MODE=!!(VIEW_PERSON||VIEW_ACCOUNT||VIEW_TAG||VIEW_CATEGORY);
 
 // ── DEFAULTS ──────────────────────────────────────────────────────────────────
 const DEFAULT_DD={
-  taskTypes:["Reminder / Task","Orders Received","Despatched","Discussions","Produced Items","Purchase Orders","Purchase Inwards","Goods Delivered","Pending Tasks","CSD Tasks","New Brand Ideas","Competition Intel","Digital Marketing","GST Issues","Tax","Security","Subscriptions","GOVT","CPC Deposit","CSD Deposit","Spectrum Deposit","Every Month"],
+  taskTypes:["Reminder / Task","Orders Received","Despatched","Discussions","Produced Items","Purchase Orders","Purchase Inwards","Goods Delivered","Pending Tasks","CSD Tasks","New Brand Ideas","Competition Intel","Digital Marketing","GST Issues","Tax","Security","Subscriptions","GOVT","CPC Deposit","CSD Deposit","Spectrum Deposit","Every Month",
+    "Customer Visit","Payment Collected","Sample Given","Complaint Received","Market Visit","Retailer Feedback","Distributor Meeting","New Customer","Lost Customer","Price Negotiation","Competitor Spotted","New Product Idea","Expense - Travel","Expense - Food","Expense - Misc"],
   persons:["Prakash","Satish (Auditor)","Maadhu","Virupaksha","Gopal Reddy","Brunda","Tassmai","CPC","CSD","Spectrum"],
   accounts:["Kotak Onam","Bank 3771","Bank 846","Bank 846 1st Floor","IDBI","ICICI","Zerodha Cash Funds","3771 FD","ICICI (Tassmai)","IDBI (Tassmai)","Tassmai Account","8466","3325","KRR Loan","BDA","Greenbay","N104","Bommasandra","HDFC XX0194"],
   financials:["Purchase Value","Deposits - 194","Deposits - 9950","194 Paid","9950 Payment Paid","Cash Expenses","Labour","Raw Bathi Purchased (Tons)","Purchase Taxes","Kotak Online Expenses","Credit Card Expenses","Brunda Expenses","Tassmai Expenses","Cheques","Zerodha","India Bulls","Indmoney","HUF"],
@@ -82,7 +96,10 @@ const DEFAULT_DD={
   properties:["Greenbay","846","846 1st Floor","N104","Bommasandra","BDA","Coonoor trip"],
   paymentStatuses:["Payment Pending","Asked Payment","Partial Payment","Paid","Overdue"],
   chemicals:["Sandal","Rose","Jasmine","Mogra","Vetiver / Khus","Lavender","Patchouli","Cedarwood","Frankincense","Myrrh","Camphor","Benzyl Benzoate","DOP","DEP","Galaxolide","Iso E Super","Hedione","Coumarin","Musk Ketone","Eugenol","Linalool","Geraniol","Vanillin","Jigat / Binder","Charcoal Powder","Wood Powder","Bamboo Sticks","Masala Mix","Jasmine ASP"],
-  categories:["Business - Orders","Business - Dispatch","Business - Production","Business - Purchase","Finance - Bank","Finance - Loans","Finance - Investments","Finance - Expenses","People","Property","Compliance - Tax","Compliance - ESI/EPF/PT","Personal","Reminders","Digital / Marketing","CSD Tasks","Misc"]
+  categories:["Business - Orders","Business - Dispatch","Business - Production","Business - Purchase","Finance - Bank","Finance - Loans","Finance - Investments","Finance - Expenses","People","Property","Compliance - Tax","Compliance - ESI/EPF/PT","Personal","Reminders","Digital / Marketing","CSD Tasks","Misc",
+    "Sales - Order","Sales - Payment","Sales - Visit","Sales - Expense","Sales - Complaint","Sales - Feedback",
+    "Intelligence - Competitor","Intelligence - Market","Intelligence - New Brand","Intelligence - Pricing",
+    "Problem - Factory","Problem - Delivery","Problem - Quality","Problem - Customer","Problem - Staff"]
 };
 
 const STATUS_TAGS=["Pending","In Progress","Done","Urgent","Super Pending","Waiting","Follow-up","Payment Due","Paid","Overdue","Review","GOVT","Recurring","AI Flagged"];
@@ -570,7 +587,20 @@ function AIPanel({entries,onClose}){
   const [q,setQ]=useState("");
   const [loading,setLoading]=useState(false);
   const [result,setResult]=useState("");
-  const QUICK=["What needs urgent attention?","Overdue payments summary","Who owes me money?","Pending compliance (GST/ESI/EPF)","CSD dispatch status","Cash flow this month","Vendor payment summary"];
+  const QUICK=[
+    "What needs urgent attention?",
+    "Overdue payments summary",
+    "Who owes me money?",
+    "Sales team performance this week",
+    "Competitor intelligence summary",
+    "Customer complaints pending",
+    "Top orders received today",
+    "Daily expenses by salesman",
+    "New brand ideas from team",
+    "Problems reported by sales",
+    "CSD dispatch status",
+    "Cash flow this month",
+  ];
 
   const ask=async(question)=>{
     setLoading(true);setResult("");
@@ -647,6 +677,20 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
 
   return<div>
     <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{initial?.id?"✏️ Edit":"✨ New Entry"}</h2>
+    {/* Quick entry buttons for sales team */}
+    {URL_USER!=="main"&&!initial?.id&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14,padding:"10px 12px",background:"#f0f8ff",border:"1.5px solid #b0d8f0",borderRadius:10}}>
+      <div style={{width:"100%",fontSize:11,fontWeight:700,color:"#005a8a",marginBottom:4}}>⚡ Quick Entry:</div>
+      {[
+        {label:"📦 Order",cat:"Sales - Order",type:"Orders Received"},
+        {label:"💰 Payment",cat:"Sales - Payment",type:"Payment Collected"},
+        {label:"🚶 Visit",cat:"Sales - Visit",type:"Customer Visit"},
+        {label:"🧾 Expense",cat:"Sales - Expense",type:"Expense - Travel"},
+        {label:"😟 Complaint",cat:"Sales - Complaint",type:"Complaint Received"},
+        {label:"🏷 Competitor",cat:"Intelligence - Competitor",type:"Competitor Spotted"},
+        {label:"💡 New Idea",cat:"Intelligence - New Brand",type:"New Product Idea"},
+        {label:"⚠️ Problem",cat:"Problem - Customer",type:"Pending Tasks"},
+      ].map(q=><button key={q.label} onClick={()=>{set("category",q.cat);set("taskType",q.type);}} style={{padding:"5px 10px",borderRadius:8,border:"1.5px solid #b0d8f0",background:"#e8f4fb",color:"#005a8a",cursor:"pointer",fontSize:12,fontWeight:600}}>{q.label}</button>)}
+    </div>}
 
     {/* VOICE INPUT */}
     <VoiceInput onResult={applyVoiceData} dropdowns={dropdowns}/>
