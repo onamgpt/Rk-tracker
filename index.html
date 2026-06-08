@@ -504,7 +504,7 @@ function App(){
         cached.forEach(function(e){sheetsAPI("save",{entry:e}).catch(function(){});});
         setSyncStatus("✅ "+cached.length+" entries · backed up");
       }
-    }).catch(function(){setSyncStatus("📴 "+entries.length+" entries offline");});
+    }).catch(function(){setSyncStatus("📴 Offline - data safe locally");});
     sheetsAPI("getDropdowns").then(function(r){if(r.dropdowns)setDropdowns(function(p){return Object.assign({},p,r.dropdowns);});}).catch(function(){});
   },[]);
 
@@ -618,7 +618,7 @@ function App(){
   const statuses=["All Status",...DEF_DD.paymentStatuses];
 
   const syncColor=syncStatus.startsWith("✅")?"#1a5a1a":syncStatus.startsWith("⚠️")?"#7a5800":"#1a3a5a";
-  const fSel={padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:600};
+  // fSel inlined
 
   const KRR_BTNS=[
     {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash",bg:"#1a5a8a"},
@@ -649,8 +649,8 @@ function App(){
       // Sync bar
       React.createElement("div",{style:{background:syncColor,borderRadius:8,padding:"3px 10px",marginBottom:8,display:"flex",alignItems:"center",gap:8}},
         React.createElement("span",{style:{flex:1,fontSize:11,color:"#c8f0c8"}},syncStatus||"📊 Ready"),
-        React.createElement("button",{onClick:recover,style:{...fSel,background:"rgba(255,150,50,.3)",color:"#ffcc88",border:"1px solid rgba(255,150,50,.5)"}},"\uD83D\uDD04 Recover"),
-        React.createElement("button",{onClick:manualSync,style:{...fSel,background:"rgba(255,255,255,.1)",color:"#c8f0c8",border:"1px solid rgba(255,255,255,.3)"}},"\u21BA Sync")
+        React.createElement("button",{onClick:recover,style:{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:"rgba(255,150,50,.3)",color:"#ffcc88",border:"1px solid rgba(255,150,50,.5)"}},"\uD83D\uDD04 Recover"),
+        React.createElement("button",{onClick:manualSync,style:{padding:"5px 10px",borderRadius:7,border:"none",cursor:"pointer",fontSize:11,fontWeight:600,background:"rgba(255,255,255,.1)",color:"#c8f0c8",border:"1px solid rgba(255,255,255,.3)"}},"\u21BA Sync")
       ),
       // Title row
       React.createElement("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}},
@@ -674,18 +674,18 @@ function App(){
       ),
       // Filter row
       React.createElement("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}},
-        React.createElement("button",{onClick:function(){setHideDone(function(h){return!h;});},style:{...fSel,background:hideDone?"rgba(200,255,200,.15)":"rgba(255,255,255,.08)",color:hideDone?"#90f090":"#f0cc80",border:"1.5px solid "+(hideDone?"#4a9a4a":"#c8a060")}},hideDone?"All":"Hide✅"),
-        React.createElement("button",{onClick:function(){setShowHidden(function(h){return!h;});},style:{...fSel,background:showHidden?"rgba(255,200,100,.15)":"rgba(255,255,255,.08)",color:"#f0cc80",border:"1.5px solid rgba(255,255,255,.2)"}},"👁"),
-        React.createElement("select",{value:sortBy,onChange:function(e){setSortBy(e.target.value);},style:{...fSel,background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1.5px solid rgba(255,255,255,.2)"}},
+        React.createElement("button",{onClick:function(){setHideDone(function(h){return!h;});},style:{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:11,fontWeight:600,border:"none",background:hideDone?"rgba(200,255,200,.15)":"rgba(255,255,255,.08)",color:hideDone?"#90f090":"#f0cc80",border:"1.5px solid "+(hideDone?"#4a9a4a":"#c8a060")}},hideDone?"All":"Hide✅"),
+        React.createElement("button",{onClick:function(){setShowHidden(function(h){return!h;});},style:{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:11,fontWeight:600,border:"none",background:showHidden?"rgba(255,200,100,.15)":"rgba(255,255,255,.08)",color:"#f0cc80",border:"1.5px solid rgba(255,255,255,.2)"}},"👁"),
+        React.createElement("select",{value:sortBy,onChange:function(e){setSortBy(e.target.value);},style:{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:11,fontWeight:600,border:"none",background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1.5px solid rgba(255,255,255,.2)"}},
           ["Newest","Oldest","Amount"].map(function(s){return React.createElement("option",{key:s},s);})
         )
       ),
       // Search + filters
       React.createElement("input",{className:"inp",value:search,placeholder:"🔍 Search...",onChange:function(e){setSearch(e.target.value);},style:{marginBottom:6,background:"rgba(255,255,255,.12)",color:"#f5d890",border:"1px solid rgba(255,255,255,.2)","::placeholder":{color:"#c8a860"}}}),
       React.createElement("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
-        React.createElement("select",{value:catFilt,onChange:function(e){setCatFilt(e.target.value);},style:{...fSel,background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1px solid rgba(255,255,255,.2)",flex:1}},cats.map(function(c){return React.createElement("option",{key:c},c);})),
-        React.createElement("select",{value:personFilt,onChange:function(e){setPersonFilt(e.target.value);},style:{...fSel,background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1px solid rgba(255,255,255,.2)",flex:1}},people.map(function(p){return React.createElement("option",{key:p},p);})),
-        React.createElement("select",{value:statusFilt,onChange:function(e){setStatusFilt(e.target.value);},style:{...fSel,background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1px solid rgba(255,255,255,.2)",flex:1}},statuses.map(function(s){return React.createElement("option",{key:s},s);}))
+        React.createElement("select",{value:catFilt,onChange:function(e){setCatFilt(e.target.value);},style:{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:11,fontWeight:600,border:"none",background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1px solid rgba(255,255,255,.2)",flex:1}},cats.map(function(c){return React.createElement("option",{key:c},c);})),
+        React.createElement("select",{value:personFilt,onChange:function(e){setPersonFilt(e.target.value);},style:{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:11,fontWeight:600,border:"none",background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1px solid rgba(255,255,255,.2)",flex:1}},people.map(function(p){return React.createElement("option",{key:p},p);})),
+        React.createElement("select",{value:statusFilt,onChange:function(e){setStatusFilt(e.target.value);},style:{padding:"5px 10px",borderRadius:7,cursor:"pointer",fontSize:11,fontWeight:600,border:"none",background:"rgba(255,255,255,.1)",color:"#f0cc80",border:"1px solid rgba(255,255,255,.2)",flex:1}},statuses.map(function(s){return React.createElement("option",{key:s},s);}))
       ),
       React.createElement("div",{style:{fontSize:10,color:"#c8a860",marginTop:4}},entries.length+" total · "+filtered.length+" shown")
     ),
