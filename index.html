@@ -476,7 +476,7 @@ function ScanBill({onResult,onMultiResult}){
         att.base64, att.type
       );
       let parsed={title:"Scanned bill",date:today(),tags:["Pending"],category:"Business - Purchase",paymentStatus:"Payment Pending"};
-      try{parsed={...parsed,...JSON.parse(txt.replace(/```json|```/g,"").trim())};}
+      try{parsed={...parsed,...JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1))};}
       catch(ex){parsed.notes=txt.slice(0,300);}
       onResult({...parsed,attachments:[att],id:genId(),createdAt:new Date().toISOString()});
       setScanMsg("✅ Done!");
@@ -502,7 +502,7 @@ function ScanBill({onResult,onMultiResult}){
           att.base64, att.type
         );
         let parsed={title:"Bill "+(i+1),date:today(),tags:["Pending"],category:"Business - Purchase",paymentStatus:"Payment Pending"};
-        try{parsed={...parsed,...JSON.parse(txt.replace(/```json|```/g,"").trim())};}
+        try{parsed={...parsed,...JSON.parse(txt.slice(txt.indexOf("{"),txt.lastIndexOf("}")+1))};}
         catch(ex){parsed.notes=txt.slice(0,300);}
         results.push({...parsed,attachments:[att],id:genId(),createdAt:new Date().toISOString()});
       }catch(e){
