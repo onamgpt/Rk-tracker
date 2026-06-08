@@ -309,13 +309,17 @@ Flag risks, overdue items, action items. Use ₹ formatting with lakhs/crores no
 
   // Include full notes (which may contain extracted document text)
   const summary=entries.slice(0,150).map(e=>{
+    const notesFull=(e.notes||"").slice(0,200);
+    const hasAtt=(e.attachments||[]).length>0?"[HAS ATTACHMENTS]":"";
+    return "["+e.date+"] "+e.title+"|Cat:"+(e.category||"-")+"|Type:"+(e.taskType||"-")+"|Person:"+(e.person||"-")+"|Vendor:"+(e.vendor||"-")+"|Account:"+(e.account||"-")+"|Amount:"+(e.amount||"-")+"|Status:"+(e.paymentStatus||"-")+"|Tags:"+(e.tags||[]).join(",")+"|Notes:"+notesFull+hasAtt;
+  }).join("\n")const summary=entries.slice(0,150).map(e=>{
     const notesFull=(e.notes||"").slice(0,200); // More notes for deeper analysis
     const hasAtt=(e.attachments||[]).length>0?"[HAS ATTACHMENTS]":"";
     return `[${e.date}] ${e.title}|Cat:${e.category||"-"}|Type:${e.taskType||"-"}|Person:${e.person||"-"}|Vendor:${e.vendor||"-"}|Account:${e.account||"-"}|Amount:${e.amount||"-"}|Status:${e.paymentStatus||"-"}|Tags:${(e.tags||[]).join(",")}|Notes:${notesFull}${hasAtt}`;
   }).join("\n");
 
   return await claudeAPI(
-    `Business tracker data (${entries.length} total entries):\n${summary}\n\nQuestion: ${question||"Give comprehensive business insights: urgent items, overdue payments, cash flow, compliance due, production status."}`,
+    "Business tracker data ("+entries.length+" total entries):\n"+summary+"\n\nQuestion: "+(question||"Give comprehensive business insights: urgent items, overdue payments, cash flow, compliance due, production status."),
     system
   );
 }
@@ -831,44 +835,33 @@ function shareEntry(entry){
 function shareEntryHTML(entry){
   const w=window.open("","_blank");
   const atts=(entry.attachments||[]);
-  const imgs=atts.filter(a=>a.type?.startsWith("image/"));
-  const docs=atts.filter(a=>!a.type?.startsWith("image/"));
-
-  const imgHtml=imgs.map(a=>"<img src='"+a.data+"' style='max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8' onclick='window.open(this.src)' />").join("");
-  const docHtml=docs.map(a=>`<a href="${a.data}" target="_blank" download="${a.name||"file"}" style="display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0">📄 ${a.name||"Download File"}</a>`).join("");
-
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>${entry.title}</title>
-  <style>
-    body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto;}
-    .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12);}
-    .header{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px;}
-    .field{display:flex;gap:8px;margin-bottom:8px;font-size:13px;}
-    .notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;line-height:1.6;}
-    .share-btn{display:block;width:100%;padding:12px;background:linear-gradient(135deg,#c8860a,#a06010);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;}
-    .footer{text-align:center;font-size:11px;color:#9a8060;margin-top:12px;}
-    img{cursor:zoom-in;}
-  </style></head><body>
-  <div class="card">
-    <div class="header">
-      <div style="font-size:18px;font-weight:700">${entry.title}</div>
-      <div style="font-size:11px;color:#c8a860;margin-top:4px">📅 ${entry.date||""}${entry.category?" · "+entry.category:""}</div>
-    </div>
-    ${entry.taskType?"<div class='field'><span>📌</span><span>"+entry.taskType+"</span></div>":""}
-    ${entry.person?"<div class='field'><span>👤</span><span>"+entry.person+"</span></div>":""}
-    ${entry.vendor?"<div class='field'><span>🏭</span><span>"+entry.vendor+"</span></div>":""}
-    ${entry.amount?"<div class='field'><span>💰</span><b style='color:#1a5a00'>"+entry.amount+"</b></div>":""}
-    ${entry.paymentStatus?"<div class='field'><span>💳</span><span>"+entry.paymentStatus+"</span></div>":""}
-    ${entry.notes?"<div class='notes'>📝 "+entry.notes+"</div>":""}
-    ${imgHtml?"<div style='margin-top:12px'>"+imgHtml+"</div>":""}
-    ${docHtml?"<div style='margin-top:8px'>"+docHtml+"</div>":""}
-    <div class="footer">🌿 Onam Agarbathi Pvt. Ltd. · RK Life Tracker · Read only</div>
-    <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${entry.title}',text:document.body.innerText});}else{window.print();}">📤 Share / Save as PDF</button>
-  </div></body></html>`);
+  const imgs=atts.filter(function(a){return a.type&&a.type.startsWith("image/");});
+  const docs=atts.filter(function(a){return !a.type||!a.type.startsWith("image/");});
+  const imgHtml=imgs.map(function(a){return "<img src='"+a.data+"' style='max-width:100%;border-radius:8px;margin:4px 0;display:block' onclick='window.open(this.src)' />";}).join("");
+  const docHtml=docs.map(function(a){return "<a href='"+a.data+"' target='_blank' download='"+(a.name||"file")+"' style='display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none'>📄 "+(a.name||"Download")+"</a>";}).join("");
+  const html="<!DOCTYPE html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>"+entry.title+"</title>"+
+    "<style>body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto;}"+
+    ".card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12);}"+
+    ".header{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px;}"+
+    ".field{display:flex;gap:8px;margin-bottom:8px;font-size:13px;}"+
+    ".notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;}"+
+    ".btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;}</style></head><body>"+
+    "<div class='card'><div class='header'><div style='font-size:18px;font-weight:700'>"+entry.title+"</div>"+
+    "<div style='font-size:11px;color:#c8a860;margin-top:4px'>📅 "+(entry.date||"")+(entry.category?" · "+entry.category:"")+"</div></div>"+
+    (entry.taskType?"<div class='field'><span>📌</span><span>"+entry.taskType+"</span></div>":"")+
+    (entry.person?"<div class='field'><span>👤</span><span>"+entry.person+"</span></div>":"")+
+    (entry.vendor?"<div class='field'><span>🏭</span><span>"+entry.vendor+"</span></div>":"")+
+    (entry.amount?"<div class='field'><span>💰</span><b style='color:#1a5a00'>"+entry.amount+"</b></div>":"")+
+    (entry.paymentStatus?"<div class='field'><span>💳</span><span>"+entry.paymentStatus+"</span></div>":"")+
+    (entry.notes?"<div class='notes'>📝 "+entry.notes+"</div>":"")+
+    (imgHtml?"<div style='margin-top:12px'>"+imgHtml+"</div>":"")+
+    (docHtml?"<div style='margin-top:8px'>"+docHtml+"</div>":"")+
+    "<div style='text-align:center;font-size:11px;color:#9a8060;margin-top:12px'>🌿 Onam Agarbathi Pvt. Ltd. · Read only</div>"+
+    "<button class='btn' onclick='if(navigator.share){navigator.share({title:""+entry.title+"",text:document.body.innerText});}else{window.print();}'>📤 Share / Save as PDF</button>"+
+    "</div></body></html>";
+  w.document.write(html);
   w.document.close();
 }
-
 
 function exportCSV(entries){
   const h=["ID","Date","Month","Title","Category","Task Type","Person","Vendor","Account","Financial","Payment Status","Property","Chemical","Amount","Tags","Notes","Reminder","Recurring","Link","Created At"];
@@ -882,26 +875,46 @@ function exportPDF(entries,label){
   const isDone=e=>e.tags?.includes("Done");
   const pending=entries.filter(e=>!isDone(e));
   const done=entries.filter(e=>isDone(e));
-  const rows=(list,title)=>{
+  const R="\u20B9";
+  const makeRows=function(list,title){
     if(!list.length)return"";
-    return`<h3 style="margin:16px 0 8px;color:${title==="Pending"?"#8B0000":"#155724"};font-size:14px">${title==="Pending"?"⏳":"✅"} ${title} (${list.length})</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
-      <thead><tr style="background:#4a2e00;color:#f5d890"><th style="padding:6px 8px;text-align:left">Title</th><th style="padding:6px 8px;text-align:left">Date</th><th style="padding:6px 8px;text-align:left">Person</th><th style="padding:6px 8px;text-align:left">Amount</th><th style="padding:6px 8px;text-align:left">Status</th><th style="padding:6px 8px;text-align:left">Notes</th></tr></thead>
-      <tbody>${list.map((e,i)=>`<tr style="background:${i%2===0?"#fffdf7":"#fff8ee"}"><td style="padding:6px 8px;font-weight:700">${e.title}</td><td style="padding:6px 8px;white-space:nowrap">${fmtDate(e.date)}</td><td style="padding:6px 8px">${e.person||""}</td><td style="padding:6px 8px;color:#1a5a00;font-weight:700">${e.amount||""}</td><td style="padding:6px 8px">${e.paymentStatus||""}</td><td style="padding:6px 8px;font-size:11px">${(e.notes||"").slice(0,60)}</td></tr>`).join("")}</tbody>
-    </table>`;
+    const color=title==="Pending"?"#8B0000":"#155724";
+    const icon=title==="Pending"?"⏳":"✅";
+    let rows="";
+    list.forEach(function(e,i){
+      rows+="<tr style='background:"+(i%2===0?"#fffdf7":"#fff8ee")+"'>"+
+        "<td style='padding:6px 8px;font-weight:700'>"+e.title+"</td>"+
+        "<td style='padding:6px 8px;white-space:nowrap'>"+fmtDate(e.date)+"</td>"+
+        "<td style='padding:6px 8px'>"+(e.person||"")+"</td>"+
+        "<td style='padding:6px 8px;color:#1a5a00;font-weight:700'>"+(e.amount||"")+"</td>"+
+        "<td style='padding:6px 8px'>"+(e.paymentStatus||"")+"</td>"+
+        "<td style='padding:6px 8px;font-size:11px'>"+(e.notes||"").slice(0,60)+"</td></tr>";
+    });
+    return "<h3 style='margin:16px 0 8px;color:"+color+";font-size:14px'>"+icon+" "+title+" ("+list.length+")</h3>"+
+      "<table style='width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px'>"+
+      "<thead><tr style='background:#4a2e00;color:#f5d890'>"+
+      "<th style='padding:6px 8px;text-align:left'>Title</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Date</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Person</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Amount</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Status</th>"+
+      "<th style='padding:6px 8px;text-align:left'>Notes</th></tr></thead>"+
+      "<tbody>"+rows+"</tbody></table>";
   };
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Georgia,serif;color:#2a1a00;padding:24px;max-width:900px;margin:0 auto;}@media print{body{padding:0;}}</style></head><body>
-  <div style="background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:16px 20px;border-radius:8px;margin-bottom:20px">
-    <div style="font-size:11px;color:#c8a860;margin-bottom:4px">🌿 Onam Agarbathi · RK Life Tracker</div>
-    <div style="font-size:20px;font-weight:700">${label} — Task Report</div>
-    <div style="font-size:11px;color:#c8a860;margin-top:4px">Generated: ${new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})} · ${entries.length} entries</div>
-  </div>
-  ${rows(pending,"Pending")}${rows(done,"Done")}
-  </body></html>`;
-  const w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
+  const html="<!DOCTYPE html><html><head><meta charset='UTF-8'/>"+
+    "<style>body{font-family:Georgia,serif;color:#2a1a00;padding:24px;max-width:900px;margin:0 auto;}</style></head><body>"+
+    "<div style='background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:16px 20px;border-radius:8px;margin-bottom:20px'>"+
+    "<div style='font-size:11px;color:#c8a860;margin-bottom:4px'>🌿 Onam Agarbathi · RK Life Tracker</div>"+
+    "<div style='font-size:20px;font-weight:700'>"+label+" - Task Report</div>"+
+    "<div style='font-size:11px;color:#c8a860;margin-top:4px'>Generated: "+new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})+" · "+entries.length+" entries</div></div>"+
+    makeRows(pending,"Pending")+makeRows(done,"Done")+
+    "</body></html>";
+  const w=window.open("","_blank");
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){w.print();},500);
 }
 
-// ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App(){
   if(IS_VIEW_MODE) return<ShareableView/>;
 
