@@ -25,6 +25,7 @@ body{margin:0;font-family:'Palatino Linotype',Georgia,serif;background:#fdf8ef}
 <body>
 <div id="root"></div>
 <script type="text/babel">
+var safeStr=function(v){return(v===null||v===undefined)?"":String(v);};
 const {useState,useEffect,useMemo,useCallback,useRef}=React;
 
 // ── USER SYSTEM ───────────────────────────────────────────────────────────────
@@ -70,8 +71,6 @@ function saveCache(entries){
     localStorage.setItem(LSK_BAK,JSON.stringify({e:entries,t:new Date().toISOString()}));
   }catch(err){}
 }
-
-function safeStr(v){return v===null||v===undefined?"":String(v);}
 
 function sanitize(e){
   if(!e||typeof e!=="object")return null;
