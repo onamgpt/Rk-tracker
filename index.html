@@ -222,21 +222,31 @@ function fileToB64(f){
 
 // ── OCR BILL SCANNER ──────────────────────────────────────────────────────────
 async function scanBill(imageBase64,imageType){
-  const system=`You are an OCR and data extraction assistant for Onam Agarbathi Pvt. Ltd., a Bangalore incense manufacturer.
-Extract invoice/bill data and return ONLY valid JSON with these exact fields:
-{
-  "title": "short description",
-  "date": "YYYY-MM-DD",
-  "vendor": "vendor name",
-  "amount": "total amount with ₹",
-  "invoiceNo": "invoice number",
-  "gstin": "vendor GSTIN",
-  "category": "Business - Purchase",
-  "financialType": "Purchase Value",
-  "paymentStatus": "Payment Pending",
-  "notes": "key items summary, quantities, rates",
-  "tags": ["Pending"],
-  "chemical": "chemical/fragrance name if applicable"
+  const system="You are an expert OCR assistant for Onam Agarbathi Pvt. Ltd., Bangalore incense manufacturer. "+
+    "CRITICAL: If Onam Agarbathi is the SELLER/SUPPLIER on the invoice, it is a SALES INVOICE - title MUST be the CUSTOMER name (e.g. Central Police Canteen Jamshedpur, Master Canteen Baghdogra). "+
+    "If Onam Agarbathi is the BUYER, it is a PURCHASE BILL - title = vendor name + item. "+
+    "Return ONLY valid JSON: {title, date (YYYY-MM-DD), vendor, customer, invoiceNo, amount (with Rs symbol), quantity (with unit), items (line items summary), category (Business - Dispatch for sales, Business - Purchase for purchases), financialType (Sales Value or Purchase Value), paymentStatus (Payment Pending), gstin, chemical, notes (include PO number, IRN, line items with rates), tags}. No markdown.";
+  const prompt="Extract all data from this bill/invoice. Return only valid JSON.";
+  try{
+    const result=await claudeAPI(prompt,system,imageBase64,imageType);
+    const clean=result.replace(/```json|```/g,"").trim();
+    const ocr=JSON.parse(clean);
+    // Smart title - customer for sales invoices, vendor for purchases
+    const smartTitle=ocr.customer&&ocr.customer.length>2?
+      ocr.customer+(ocr.invoiceNo?" (Inv "+ocr.invoiceNo+")":""):
+      (ocr.title||((ocr.vendor||"Bill")+" "+(ocr.invoiceNo||"")).trim());
+    const fullNotes=[
+      ocr.notes||"",
+      ocr.quantity?"Qty: "+ocr.quantity:"",
+      ocr.items?"Items: "+ocr.items:"",
+      ocr.customer?"Customer: "+ocr.customer:"",
+      ocr.invoiceNo?"Invoice No: "+ocr.invoiceNo:"",
+      ocr.gstin?"GSTIN: "+ocr.gstin:""
+    ].filter(Boolean).join(" | ");
+    return {...ocr,title:smartTitle,notes:fullNotes};
+  }catch(e){
+    return{title:"Scanned bill",notes:"OCR failed: "+e.message,date:today(),tags:["Pending"]};
+  }
 }
 Return ONLY the JSON object, no other text.`;
 
