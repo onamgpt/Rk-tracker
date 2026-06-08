@@ -1016,6 +1016,8 @@ function App(){
   const [filterStatus,setFilterStatus]=useState("");
   const [hideDone,setHideDone]=useState(false);
   const [showHidden,setShowHidden]=useState(false);
+  const [showAssign,setShowAssign]=useState(false);
+  const [assignEntry,setAssignEntry]=useState(null);
   const [sort,setSort]=useState("date_desc");
 
   useEffect(()=>{saveDD(dropdowns);},[dropdowns]);
@@ -1067,23 +1069,24 @@ function App(){
     if(entry)await sheetsAPI("save",{entry});
   };
 
-  // ── ASSIGN TO PRAKASH ──────────────────────────────────────────────────────
-  const assignToPrakash=async(entry)=>{
+  // ── ASSIGN TASK TO ANYONE ─────────────────────────────────────────────────
+  const assignTo=async(entry,toUser)=>{
+    const toConfig=USER_CONFIG[toUser]||{name:toUser};
     const assigned={...entry,
-      assignedTo:"prakash",
-      assignedBy:"main",
-      assignedByName:"Krr",
+      assignedTo:toUser,
+      assignedBy:URL_USER,
+      assignedByName:CURRENT_USER.name,
       assignedAt:new Date().toISOString(),
       tags:[...new Set([...(entry.tags||[]),"Assigned","Pending"])],
-      isAssigned:true
+      isAssigned:true,
+      assigneeStatus:"",
+      assigneeNote:"",
     };
-    // Save to sheets with assigned flag - Prakash will see it
-    const r=await sheetsAPI("save",{entry:assigned});
-    // Update local copy too
+    await sheetsAPI("save",{entry:assigned});
     const updated=entries.map(e=>e.id===entry.id?assigned:e);
     setEntries(updated);saveCache(updated);
-    // Notify via Telegram
-    const msg="📋 Task assigned to you by Krr:
+    // Telegram notification
+    const msg="📋 Task assigned to "+toConfig.name+" by "+CURRENT_USER.name+":
 
 "+
       "📌 "+assigned.title+
@@ -1093,30 +1096,32 @@ function App(){
 📝 "+assigned.notes.slice(0,100):"")+
       "
 
-Open your tracker to view and update.";
+Open your tracker to view.";
     fetch("https://api.telegram.org/bot8852628858:AAHAZ3ZjosHPrEC0OU8fDnRXBNcKnwO2gus/sendMessage",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({chat_id:"8632288596",text:msg})
     }).catch(()=>{});
-    setSyncStatus("✅ Assigned to Prakash");
+    setSyncStatus("✅ Assigned to "+toConfig.name);
     setViewE(null);
+    setShowAssign(false);
   };
 
   const updateAssigned=async(entry,status,note)=>{
-    // Prakash updates an assigned task
     const updated={...entry,
-      prakashStatus:status,
-      prakashNote:note||"",
-      prakashUpdatedAt:new Date().toISOString(),
+      assigneeStatus:status,
+      assigneeNote:note||"",
+      assigneeUpdatedAt:new Date().toISOString(),
+      assigneeUser:URL_USER,
+      assigneeName:CURRENT_USER.name,
       tags:status==="Done"?
         [...new Set([...(entry.tags||[]).filter(t=>t!=="Pending"),"Done","Assigned"])]:
-        [...new Set([...(entry.tags||[]),"Assigned"])]
+        [...new Set([...(entry.tags||[]),"Assigned","In Progress"])]
     };
     await sheetsAPI("save",{entry:updated});
     const localUpdated=entries.map(e=>e.id===entry.id?updated:e);
     setEntries(localUpdated);saveCache(localUpdated);
     setViewE(null);
-    setSyncStatus("✅ Updated and synced to Krr");
+    setSyncStatus("✅ Updated · "+entry.assignedByName+" will see this");
   };
 
   const hideEntry=async(id)=>{
@@ -1333,9 +1338,9 @@ Open your tracker to view and update.";
       </div>
     </div>
 
-    {/* ASSIGNED TASKS - Prakash sees tasks from Krr */}
-    {URL_USER==="prakash"&&(()=>{
-      const assigned=entries.filter(e=>e.assignedTo==="prakash"&&!e.tags?.includes("Done"));
+    {/* ASSIGNED TASKS - Anyone sees tasks assigned to them */}
+    {URL_USER!=="main"&&(()=>{
+      const assigned=entries.filter(e=>e.assignedTo===URL_USER&&!e.tags?.includes("Done"));
       if(assigned.length===0)return null;
       return<div style={{background:"linear-gradient(135deg,#fff8e8,#fff3d0)",border:"2px solid #c8a060",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
         <div style={{fontWeight:700,fontSize:13,color:"#2a1800",marginBottom:10}}>
@@ -1367,23 +1372,31 @@ Open your tracker to view and update.";
       </div>;
     })()}
 
-    {/* ASSIGNED TASKS - Krr sees Prakash's updates */}
+    {/* TASKS ASSIGNED TO KRR - from anyone */}
     {URL_USER==="main"&&(()=>{
-      const assigned=entries.filter(e=>e.assignedTo==="prakash"&&e.prakashStatus);
-      const updated=assigned.filter(e=>!e.seenByKrr&&e.prakashUpdatedAt);
-      if(updated.length===0)return null;
-      return<div style={{background:"linear-gradient(135deg,#e8f4e8,#d8f0d8)",border:"2px solid #88c888",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
-        <div style={{fontWeight:700,fontSize:13,color:"#1a5a1a",marginBottom:10}}>
-          📋 Prakash Updates ({updated.length})
-        </div>
-        {updated.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #c8e8c8"}}>
-          <div style={{fontWeight:700,fontSize:14}}>{e.title}</div>
-          <div style={{fontSize:12,color:"#1a5a1a",marginTop:4}}>
-            Status: <b>{e.prakashStatus}</b>
-            {e.prakashNote?" — "+e.prakashNote:""}
-          </div>
-        </div>)}
-      </div>;
+      const assignedToMe=entries.filter(e=>e.assignedTo==="main"&&!e.tags?.includes("Done"));
+      const updatedByOthers=entries.filter(e=>e.assignedBy==="main"&&e.assigneeStatus&&!e.seenByKrr);
+      return<>
+        {assignedToMe.length>0&&<div style={{background:"linear-gradient(135deg,#fff0e8,#ffe8d0)",border:"2px solid #e8a060",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#5a2a00",marginBottom:10}}>🔔 Assigned to You ({assignedToMe.length})</div>
+          {assignedToMe.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #e8d0c8"}}>
+            <div style={{fontWeight:700,fontSize:14}}>{e.title}</div>
+            <div style={{fontSize:11,color:"#7a5a40"}}>From: {e.assignedByName} · {e.date}</div>
+            {e.amount&&<div style={{fontSize:13,color:"#1a5a00",fontWeight:700}}>{e.amount}</div>}
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <button onClick={()=>{const n=prompt("Update note:")||"";updateAssigned(e,"In Progress",n);}} style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#1a5a8a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>🔄 In Progress</button>
+              <button onClick={()=>{const n=prompt("Done note:")||"Done";updateAssigned(e,"Done",n);}} style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#1a7a1a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>
+            </div>
+          </div>)}
+        </div>}
+        {updatedByOthers.length>0&&<div style={{background:"linear-gradient(135deg,#e8f4e8,#d8f0d8)",border:"2px solid #88c888",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#1a5a1a",marginBottom:10}}>📋 Team Updates ({updatedByOthers.length})</div>
+          {updatedByOthers.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #c8e8c8"}}>
+            <div style={{fontWeight:700,fontSize:14}}>{e.title}</div>
+            <div style={{fontSize:12,color:"#1a5a1a",marginTop:4}}>{e.assigneeName}: <b>{e.assigneeStatus}</b>{e.assigneeNote?" — "+e.assigneeNote:""}</div>
+          </div>)}
+        </div>}
+      </>;
     })()}
 
     {/* TABLE */}
@@ -1461,8 +1474,8 @@ Open your tracker to view and update.";
             <h2 style={{margin:0,fontSize:18,color:"#2a1a00"}}>{viewE.title}</h2></div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
             {!viewE.tags?.includes("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
-            {URL_USER==="main"&&!viewE.assignedTo&&<button onClick={()=>assignToPrakash(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"linear-gradient(135deg,#c8860a,#a06010)",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>📋 → Prakash</button>}
-            {URL_USER==="main"&&viewE.assignedTo==="prakash"&&<div style={{padding:"6px 12px",fontSize:11,color:"#1a5a1a",fontWeight:700}}>✅ Assigned to Prakash{viewE.prakashStatus?" · "+viewE.prakashStatus:""}</div>}
+            {!viewE.assignedTo&&<button onClick={()=>{setAssignEntry(viewE);setShowAssign(true);}} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"linear-gradient(135deg,#c8860a,#a06010)",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>📋 Assign</button>}
+            {viewE.assignedTo&&<div style={{padding:"6px 12px",fontSize:11,color:"#1a5a1a",fontWeight:700,background:"#edfaed",borderRadius:7,border:"1px solid #88cc88"}}>✅ Assigned to {USER_CONFIG[viewE.assignedTo]?.name||viewE.assignedTo}{viewE.assigneeStatus?" · "+viewE.assigneeStatus:""}</div>}
             <button onClick={()=>shareEntry(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:12,fontWeight:700}}>📤 Share</button>
             <button onClick={()=>shareEntryHTML(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #5a3a8a",background:"#f5eeff",color:"#5a1a8a",cursor:"pointer",fontSize:12}}>🖼 Card</button>
             <button onClick={()=>{setEditE(viewE);setViewE(null);setShowForm(true);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:12}}>✏️</button>
@@ -1493,6 +1506,39 @@ Open your tracker to view and update.";
     <Modal open={showAI} onClose={()=>setShowAI(false)} wide><AIPanel entries={entries} onClose={()=>setShowAI(false)}/></Modal>
     <Modal open={showDD} onClose={()=>setShowDD(false)} wide><DropdownManager dropdowns={dropdowns} onSave={saveDropdowns} onClose={()=>setShowDD(false)}/></Modal>
     <Modal open={showShare} onClose={()=>setShowShare(false)} wide><SharePanel/></Modal>
+    <Modal open={showAssign} onClose={()=>setShowAssign(false)}>
+      {assignEntry&&<div>
+        <h2 style={{margin:"0 0 12px",fontSize:18}}>📋 Assign Task</h2>
+        <div style={{background:"#fffdf5",border:"1px solid #e8dcc8",borderRadius:8,padding:"10px 13px",marginBottom:14}}>
+          <div style={{fontWeight:700}}>{assignEntry.title}</div>
+          {assignEntry.amount&&<div style={{color:"#1a5a00",fontWeight:700}}>{assignEntry.amount}</div>}
+        </div>
+        <div style={{marginBottom:12}}>
+          <label className="lbl">Assign to:</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6}}>
+            {[
+              {user:"main",label:"👤 Krr (me)"},
+              {user:"prakash",label:"👤 Prakash"},
+              {user:"maadhu",label:"👤 Maadhu"},
+              {user:"virupaksha",label:"👤 Virupaksha"},
+              {user:"satish",label:"👤 Satish"},
+              {user:"sebi",label:"👤 Sebi"},
+              {user:"sugeesh",label:"👤 Sugeesh"},
+              {user:"sunil",label:"👤 Sunil"},
+              {user:"biju",label:"👤 Biju"},
+              {user:"sadasivan",label:"👤 Sadasivan"},
+              {user:"sooraj",label:"👤 Sooraj"},
+              {user:"murugan",label:"👤 Murugan"},
+            ].filter(u=>u.user!==URL_USER).map(u=><button key={u.user}
+              onClick={()=>assignTo(assignEntry,u.user)}
+              style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#2a1800",cursor:"pointer",fontSize:13,fontWeight:600}}>
+              {u.label}
+            </button>)}
+          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end"}}><button className="bgh" onClick={()=>setShowAssign(false)}>Cancel</button></div>
+      </div>}
+    </Modal>
   </div>;
 }
 
