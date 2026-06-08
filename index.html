@@ -308,7 +308,7 @@ Analyse ALL data deeply including document contents in notes. Be specific with a
 Flag risks, overdue items, action items. Use ₹ formatting with lakhs/crores notation.`;
 
   // Include full notes (which may contain extracted document text)
-  const summary=entries.slice(0,150).map(e=>{
+  const summary=entries.slice(0,150).map(function(e){
     const notesFull=(e.notes||"").slice(0,200);
     const hasAtt=(e.attachments||[]).length>0?"[HAS ATTACHMENTS]":"";
     return "["+e.date+"] "+e.title+"|Cat:"+(e.category||"-")+"|Type:"+(e.taskType||"-")+"|Person:"+(e.person||"-")+"|Vendor:"+(e.vendor||"-")+"|Account:"+(e.account||"-")+"|Amount:"+(e.amount||"-")+"|Status:"+(e.paymentStatus||"-")+"|Tags:"+(e.tags||[]).join(",")+"|Notes:"+notesFull+hasAtt;
