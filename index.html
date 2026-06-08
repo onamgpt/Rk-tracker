@@ -229,7 +229,7 @@ async function scanBill(imageBase64,imageType){
   const prompt="Extract all data from this bill/invoice. Return only valid JSON.";
   try{
     const result=await claudeAPI(prompt,system,imageBase64,imageType);
-    const clean=result.replace(/```json|```/g,"").trim();
+    const clean=result.replace(/```json|```/g,"").replace(/`/g,"").trim();
     const ocr=JSON.parse(clean);
     // Smart title - customer for sales invoices, vendor for purchases
     const smartTitle=ocr.customer&&ocr.customer.length>2?
@@ -253,7 +253,7 @@ Return ONLY the JSON object, no other text.`;
   const prompt="Extract all data from this bill/invoice and return as JSON.";
   try{
     const result=await claudeAPI(prompt,system,imageBase64,imageType);
-    const clean=result.replace(/```json|```/g,"").trim();
+    const clean=result.replace(/```json|```/g,"").replace(/`/g,"").trim();
     return JSON.parse(clean);
   }catch(e){
     return {title:"Scanned bill",notes:result,date:today(),tags:["Pending"]};
@@ -290,7 +290,7 @@ Return ONLY the JSON, no other text.`;
 
   try{
     const result=await claudeAPI(`Extract data from this voice input: "${transcript}"`,system);
-    const clean=result.replace(/```json|```/g,"").trim();
+    const clean=result.replace(/```json|```/g,"").replace(/`/g,"").trim();
     const data=JSON.parse(clean);
     if(!data.date||data.date==="today")data.date=today();
     return data;
