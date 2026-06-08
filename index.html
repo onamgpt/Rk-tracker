@@ -323,7 +323,7 @@ Flag risks, overdue items, action items. Use ₹ formatting with lakhs/crores no
 // ── COMPONENTS ────────────────────────────────────────────────────────────────
 function TagBadge({tag,onRemove}){
   const c=TAG_STYLES[tag]||{bg:"#eee",text:"#444",border:"#ccc"};
-  return<span style={{display:"inline-flex",alignItems:"center",gap:3,background:c.bg,color:c.text,border:`1px solid ${c.border}`,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:700,whiteSpace:"nowrap",lineHeight:1.7}}>
+  return<span style={{display:"inline-flex",alignItems:"center",gap:3,background:c.bg,color:c.text,border:"1px solid "+c.border,borderRadius:20,padding:"2px 9px",fontSize:11,fontWeight:700,whiteSpace:"nowrap",lineHeight:1.7}}>
     {tag}{onRemove&&<span onClick={()=>onRemove(tag)} style={{cursor:"pointer",marginLeft:1,fontSize:14,opacity:.6,lineHeight:1}}>×</span>}
   </span>;
 }
@@ -489,7 +489,7 @@ function ScanBill({onResult,onMultiResult}){
     setProgress({current:0,total:arr.length});
     const results=[];
     for(let i=0;i<arr.length;i++){
-      setScanMsg(`Scanning ${i+1} of ${arr.length}...`);
+      setScanMsg("Scanning "+(i+1)+" of "+arr.length+"...");
       setProgress({current:i+1,total:arr.length});
       try{
         const att=await fileToB64(arr[i]);
@@ -498,15 +498,15 @@ function ScanBill({onResult,onMultiResult}){
           "You are an OCR assistant for Onam Agarbathi. Return only valid JSON, no markdown.",
           att.base64, att.type
         );
-        let parsed={title:`Bill ${i+1}`,date:today(),tags:["Pending"],category:"Business - Purchase",paymentStatus:"Payment Pending"};
+        let parsed={title:"Bill "+(i+1),date:today(),tags:["Pending"],category:"Business - Purchase",paymentStatus:"Payment Pending"};
         try{parsed={...parsed,...JSON.parse(txt.replace(/```json|```/g,"").trim())};}
         catch(ex){parsed.notes=txt.slice(0,300);}
         results.push({...parsed,attachments:[att],id:genId(),createdAt:new Date().toISOString()});
       }catch(e){
-        results.push({title:`Bill ${i+1} (scan failed)`,date:today(),tags:["Pending"],notes:e.message,id:genId(),createdAt:new Date().toISOString()});
+        results.push({title:"Bill "+(i+1)+" (scan failed)",date:today(),tags:["Pending"],notes:e.message,id:genId(),createdAt:new Date().toISOString()});
       }
     }
-    setScanMsg(`✅ ${results.length} bills scanned!`);
+    setScanMsg("✅ "+results.length+" bills scanned!");
     setScanning(false);
     setProgress({current:0,total:0});
     if(onMultiResult) onMultiResult(results);
@@ -549,7 +549,7 @@ function ScanBill({onResult,onMultiResult}){
     </div>
     {scanMsg&&<div style={{fontSize:12,color:"#1a5a1a",fontWeight:600,marginBottom:4}}>{scanMsg}</div>}
     {progress.total>0&&<div style={{background:"#c8e8c8",borderRadius:20,height:6,marginBottom:6}}>
-      <div style={{background:"#1a7a1a",borderRadius:20,height:6,width:`${(progress.current/progress.total)*100}%`,transition:"width .3s"}}/>
+      <div style={{background:"#1a7a1a",borderRadius:20,height:6,width:((progress.current/progress.total)*100)+"%",transition:"width .3s"}}/>
     </div>}
     <div style={{fontSize:10,color:"#5a8a5a"}}>📚 Multi Bills: select up to 10 photos at once → all auto-filled</div>
   </div>;
@@ -599,7 +599,7 @@ function DropdownManager({dropdowns,onSave,onClose}){
   return<div>
     <h2 style={{margin:"0 0 12px",fontSize:18}}>⚙️ Manage Dropdowns</h2>
     <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
-      {Object.entries(KEYS).map(([k,l])=><button key={k} onClick={()=>setActive(k)} style={{padding:"4px 11px",borderRadius:20,border:`1.5px solid ${active===k?"#c8a060":"#e0d0b8"}`,background:active===k?"#fff3d8":"#fffdf7",color:active===k?"#7a4800":"#7a6a52",cursor:"pointer",fontSize:12,fontWeight:active===k?700:400}}>{l}</button>)}
+      {Object.entries(KEYS).map(([k,l])=><button key={k} onClick={()=>setActive(k)} style={{padding:"4px 11px",borderRadius:20,border:(active===k?"1.5px solid #c8a060":"1.5px solid #e0d0b8"),background:active===k?"#fff3d8":"#fffdf7",color:active===k?"#7a4800":"#7a6a52",cursor:"pointer",fontSize:12,fontWeight:active===k?700:400}}>{l}</button>)}
     </div>
     <div style={{background:"#fffdf5",border:"1px solid #e8dcc8",borderRadius:10,padding:10,marginBottom:10,maxHeight:200,overflowY:"auto"}}>
       {dd[active].map((item,i)=><div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"5px 8px",borderBottom:"1px solid #f0e8d8"}}>
@@ -608,7 +608,7 @@ function DropdownManager({dropdowns,onSave,onClose}){
       </div>)}
     </div>
     <div style={{display:"flex",gap:8,marginBottom:12}}>
-      <input className="inp" value={newVal} placeholder={`Add to ${KEYS[active]}…`} onChange={e=>setNewVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
+      <input className="inp" value={newVal} placeholder={"Add to "+KEYS[active]+"…"} onChange={e=>setNewVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addItem()}/>
       <button onClick={addItem} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#2a7a2a",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>＋</button>
     </div>
     <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
@@ -745,7 +745,7 @@ function ShareableView(){
         <div>
           {pending.length>0&&<div style={{marginBottom:20}}>
             <div style={{fontSize:12,fontWeight:700,color:"#8B0000",marginBottom:10}}><span style={{background:"#8B0000",color:"#fff",borderRadius:20,padding:"2px 10px"}}>⏳ Pending — {pending.length}</span></div>
-            {pending.map((e,i)=><div key={e.id} style={{background:e.tags?.includes("Super Pending")?"#fff0f0":"#fffdf7",border:`1.5px solid ${e.tags?.includes("Super Pending")?"#f5c6cb":"#e8dcc8"}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
+            {pending.map((e,i)=><div key={e.id} style={{background:e.tags?.includes("Super Pending")?"#fff0f0":"#fffdf7",border:(e.tags?.includes("Super Pending")?"1.5px solid #f5c6cb":"1.5px solid #e8dcc8"),borderRadius:12,padding:"12px 14px",marginBottom:8}}>
               <div style={{fontWeight:700,fontSize:14,color:"#2a1600",marginBottom:4}}>{e.title}</div>
               {e.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>{e.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
               <div style={{display:"flex",flexWrap:"wrap",gap:6,fontSize:12}}>
@@ -872,10 +872,10 @@ function shareEntryHTML(entry){
 
 function exportCSV(entries){
   const h=["ID","Date","Month","Title","Category","Task Type","Person","Vendor","Account","Financial","Payment Status","Property","Chemical","Amount","Tags","Notes","Reminder","Recurring","Link","Created At"];
-  const rows=entries.map(e=>[e.id,e.date,e.month,e.title,e.category,e.taskType,e.person,e.vendor,e.account,e.financialType,e.paymentStatus,e.property,e.chemical,e.amount,(e.tags||[]).join("; "),e.notes,e.reminder,e.isRecurring?"Yes":"",e.link,e.createdAt].map(v=>`"${String(v||"").replace(/"/g,'""')}"`));
+  const rows=entries.map(e=>[e.id,e.date,e.month,e.title,e.category,e.taskType,e.person,e.vendor,e.account,e.financialType,e.paymentStatus,e.property,e.chemical,e.amount,(e.tags||[]).join("; "),e.notes,e.reminder,e.isRecurring?"Yes":"",e.link,e.createdAt].map(v=>'"'+String(v||"").replace(/"/g,'""')+'"'));
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([[h,...rows].map(r=>r.join(",")).join("\n")],{type:"text/csv"}));
-  a.download=`rk-tracker-${today()}.csv`;a.click();
+  a.download="rk-tracker-"+today()+".csv";a.click();
 }
 
 function exportPDF(entries,label){
@@ -1077,9 +1077,9 @@ function App(){
     return<div>
       <h2 style={{margin:"0 0 4px",fontSize:18}}>🔗 Share View Links</h2>
       <p style={{fontSize:12,color:"#9a8060",marginBottom:12}}>Read-only filtered view — recipient can't edit</p>
-      {persons.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>👤 By Person</div>{persons.map(p=><Row key={p} label={p} url={`${base}?person=${encodeURIComponent(p)}`} k={p}/>)}</div>}
-      {tags.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏷 By Tag</div>{tags.slice(0,6).map(t=><Row key={t} label={t} url={`${base}?tag=${encodeURIComponent(t)}`} k={t}/>)}</div>}
-      {accounts.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏦 By Account</div>{accounts.slice(0,5).map(a=><Row key={a} label={a} url={`${base}?account=${encodeURIComponent(a)}`} k={a}/>)}</div>}
+      {persons.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>👤 By Person</div>{persons.map(p=><Row key={p} label={p} url={base+"?person="+encodeURIComponent(p)} k={p}/>)}</div>}
+      {tags.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏷 By Tag</div>{tags.slice(0,6).map(t=><Row key={t} label={t} url={base+"?tag="+encodeURIComponent(t)} k={t}/>)}</div>}
+      {accounts.length>0&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:6}}>🏦 By Account</div>{accounts.slice(0,5).map(a=><Row key={a} label={a} url={base+"?account="+encodeURIComponent(a)} k={a}/>)}</div>}
       <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}><button className="bgh" onClick={()=>setShowShare(false)}>Close</button></div>
     </div>;
   };
@@ -1258,7 +1258,7 @@ function App(){
         </div>
         {viewE.notes&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:5}}>Notes</div><div style={{background:"#fffdf5",border:"1px solid #e8dcc8",borderRadius:8,padding:"9px 13px",fontSize:13,whiteSpace:"pre-wrap",lineHeight:1.6}}>{viewE.notes}</div></div>}
         {viewE.link&&<div style={{marginBottom:12}}><div className="lbl" style={{marginBottom:4}}>Link</div><a href={viewE.link} target="_blank" rel="noreferrer" style={{color:"#0057b0",fontSize:13,wordBreak:"break-all"}}>{viewE.linkLabel||viewE.link}</a></div>}
-        {viewE.reminder&&<div style={{background:isOverdue(viewE.reminder)?"#fff0f0":"#e8f4fb",border:`1.5px solid ${isOverdue(viewE.reminder)?"#f5a8ab":"#b0d8f0"}`,borderRadius:9,padding:"9px 13px",marginBottom:12}}>
+        {viewE.reminder&&<div style={{background:isOverdue(viewE.reminder)?"#fff0f0":"#e8f4fb",border:(isOverdue(viewE.reminder)?"1.5px solid #f5a8ab":"1.5px solid #b0d8f0"),borderRadius:9,padding:"9px 13px",marginBottom:12}}>
           <span style={{fontSize:13,fontWeight:700,color:isOverdue(viewE.reminder)?"#c00":"#006aaa"}}>📲 {isOverdue(viewE.reminder)?"OVERDUE · ":""}{fmtDT(viewE.reminder)}{viewE.isRecurring&&<span style={{marginLeft:8,fontSize:11,color:"#5a8a30"}}>🔁 Monthly</span>}</span>
           {viewE.reminderNote&&<div style={{fontSize:12,color:"#005a8a",marginTop:3}}>{viewE.reminderNote}</div>}
         </div>}
