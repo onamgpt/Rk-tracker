@@ -608,7 +608,7 @@ function App(){
       return true;
     });
     if(sortBy==="Oldest")list.sort(function(a,b){return(a.date||"").localeCompare(b.date||"");});
-    else if(sortBy==="Amount")list.sort(function(a,b){return parseFloat((b.amount||"0").replace(/[^0-9.]/g,""))-parseFloat((a.amount||"0").replace(/[^0-9.]/g,""));});
+    else if(sortBy==="Amount")list.sort(function(a,b){var ba=parseFloat(String(b.amount||0).replace(/[^0-9.]/g,""))||0;var aa=parseFloat(String(a.amount||0).replace(/[^0-9.]/g,""))||0;return ba-aa;});
     return list;
   },[entries,search,catFilt,tagFilt,personFilt,statusFilt,hideDone,showHidden,sortBy]);
 
