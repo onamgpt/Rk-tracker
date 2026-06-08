@@ -39,17 +39,14 @@ const {useState,useEffect,useRef,useMemo,useCallback}=React;
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbykR0d_SVgZsKVG98IDG7yLQz_o0OvlSR7nu8Xk0koKg1PK9BBcdMQPA-XYTABPJ5tp4w/exec";
 const BOT_TOKEN="8852628858:AAHAZ3ZjosHPrEC0OU8fDnRXBNcKnwO2gus";
 const OWNER_CHAT_ID="8632288596";
-const URL_PARAMS_U=new URLSearchParams(window.location.search);
-const URL_USER=URL_PARAMS_U.get("user")||"main";
-const SHARED_USERS=["main","prakash","maadhu","virupaksha","gopal","satish","sebi","sugeesh","sunil","biju","sadasivan","sooraj","murugan"];
-const IS_SHARED=SHARED_USERS.includes(URL_USER.toLowerCase());
+const URL_USER=new URLSearchParams(window.location.search).get("user")||"main";
+const FAMILY_USERS=["wife","daughter"];
+const SALES_USERS=["satish","sebi","sugeesh","sunil","biju","sadasivan","sooraj","murugan"];
+const IS_FAMILY=FAMILY_USERS.includes(URL_USER);
+const IS_SALES=SALES_USERS.includes(URL_USER);
+const IS_SHARED=["main","prakash","maadhu","virupaksha","gopal",...SALES_USERS].includes(URL_USER);
 const LS_CACHE="rk_cache_v2_"+URL_USER;
 const LS_DD="rk_dropdowns_v2_"+URL_USER;
-// User types
-const FAMILY_USERS=["wife","daughter"];
-const IS_FAMILY=FAMILY_USERS.includes(URL_USER.toLowerCase());
-const IS_SALES=["satish","sebi","sugeesh","sunil","biju","sadasivan","sooraj","murugan"].includes(URL_USER.toLowerCase());
-
 const USER_CONFIG={
   main:{name:"Krr",color:"#2a1800",bg:"#f5d890",admin:true},
   prakash:{name:"Prakash",color:"#0a3a6a",bg:"#c8e8ff",admin:false},
@@ -67,14 +64,14 @@ const USER_CONFIG={
   wife:{name:"Wife",color:"#6a1a4a",bg:"#f8c8e8",admin:false},
   daughter:{name:"Daughter",color:"#1a4a6a",bg:"#c8e0ff",admin:false},
 };
-const CURRENT_USER=USER_CONFIG[URL_USER.toLowerCase()]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
+const CURRENT_USER=USER_CONFIG[URL_USER]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
 const URL_PARAMS=new URLSearchParams(window.location.search);
 const VIEW_PERSON=URL_PARAMS.get("person");
 const VIEW_ACCOUNT=URL_PARAMS.get("account");
 const VIEW_TAG=URL_PARAMS.get("tag");
 const VIEW_CATEGORY=URL_PARAMS.get("category");
-const IS_VIEW_MODE=!!(VIEW_PERSON||VIEW_ACCOUNT||VIEW_TAG||VIEW_CATEGORY)&&!URL_PARAMS.get("user");
+const IS_VIEW_MODE=!!(VIEW_PERSON||VIEW_ACCOUNT||VIEW_TAG||VIEW_CATEGORY)&&!new URLSearchParams(window.location.search).get("user");
 
 // ── DEFAULTS ──────────────────────────────────────────────────────────────────
 const DEFAULT_DD={
@@ -86,7 +83,7 @@ const DEFAULT_DD={
   properties:["Greenbay","846","846 1st Floor","N104","Bommasandra","BDA","Coonoor trip"],
   paymentStatuses:["Payment Pending","Asked Payment","Partial Payment","Paid","Overdue"],
   chemicals:["Sandal","Rose","Jasmine","Mogra","Vetiver / Khus","Lavender","Patchouli","Cedarwood","Frankincense","Myrrh","Camphor","Benzyl Benzoate","DOP","DEP","Galaxolide","Iso E Super","Hedione","Coumarin","Musk Ketone","Eugenol","Linalool","Geraniol","Vanillin","Jigat / Binder","Charcoal Powder","Wood Powder","Bamboo Sticks","Masala Mix","Jasmine ASP"],
-  categories:["Business - Orders","Business - Dispatch","Business - Production","Business - Purchase","Finance - Bank","Finance - Loans","Finance - Investments","Finance - Expenses","People","Property","Compliance - Tax","Compliance - ESI/EPF/PT","Personal","Reminders","Digital / Marketing","CSD Tasks","Misc","Sales - Order","Sales - Payment","Sales - Visit","Sales - Expense","Sales - Complaint","Sales - Feedback","Intelligence - Competitor","Intelligence - Market","Intelligence - New Brand","Intelligence - Pricing","Problem - Factory","Problem - Delivery","Problem - Quality","Problem - Customer","Problem - Staff","Personal - Wedding","Personal - Expense","Personal - Thoughts","Personal - Shopping","Personal - Health","Personal - Travel","Reminders"]
+  categories:["Business - Orders","Business - Dispatch","Business - Production","Business - Purchase","Finance - Bank","Finance - Loans","Finance - Investments","Finance - Expenses","People","Property","Compliance - Tax","Compliance - ESI/EPF/PT","Personal","Reminders","Digital / Marketing","CSD Tasks","Misc","Sales - Order","Sales - Payment","Sales - Visit","Sales - Expense","Sales - Complaint","Intelligence - Competitor","Intelligence - New Brand","Problem - Customer","Problem - Delivery","Personal - Wedding","Personal - Expense","Personal - Thoughts","Personal - Shopping"]
 };
 
 const STATUS_TAGS=["Pending","In Progress","Done","Urgent","Super Pending","Waiting","Follow-up","Payment Due","Paid","Overdue","Review","GOVT","Recurring","AI Flagged"];
@@ -116,108 +113,38 @@ function isOverdue(r){return r&&new Date(r)<new Date();}
 
 function loadCache(){
   try{
-    const allEntries={};
-    // Check EVERY possible key we have ever used
-    const allKeys=[
-      LS_CACHE,
-      "rk_cache_v2","rk_cache_v2_main","rk_master_backup",
-      "rk_cache","rk_entries",
-      LS_CACHE+"_backup"
-    ];
-    allKeys.forEach(k=>{
+    const all={};
+    ["rk_cache_v2_main","rk_master_backup",LS_CACHE,LS_CACHE+"_backup","rk_cache_v2"].forEach(k=>{
       try{
         let d=JSON.parse(localStorage.getItem(k)||"null");
         if(!d)return;
-        // Handle both array and backup object format
         if(d.entries)d=d.entries;
-        if(Array.isArray(d))d.forEach(e=>{if(e&&e.id&&e.title)allEntries[e.id]=e;});
+        if(Array.isArray(d))d.forEach(e=>{if(e&&e.id&&e.title)all[e.id]=e;});
       }catch(e){}
     });
-    // Also scan any dated backup keys
-    Object.keys(localStorage)
-      .filter(k=>k.startsWith("rk_cache")&&k.includes("_202"))
-      .forEach(k=>{
-        try{
-          let d=JSON.parse(localStorage.getItem(k)||"null");
-          if(d&&d.entries)d=d.entries;
-          if(Array.isArray(d))d.forEach(e=>{if(e&&e.id&&e.title)allEntries[e.id]=e;});
-        }catch(e){}
-      });
-    const merged=Object.values(allEntries);
-    merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
-    return merged;
+    const r=Object.values(all);
+    r.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
+    return r;
   }catch{return[];}
 }
 function saveCache(e){
-  if(!e||e.length===0)return; // NEVER save empty array
   try{
-    const payload=JSON.stringify(e);
-    // Save to multiple keys for redundancy
-    localStorage.setItem(LS_CACHE,payload);
-    localStorage.setItem("rk_cache_v2_main",payload); // Always keep a master copy
-    localStorage.setItem("rk_master_backup",payload); // Ultimate fallback
+    localStorage.setItem(LS_CACHE,JSON.stringify(e));
+    // Keep rolling backup — last 3 saves
     const backup={entries:e,savedAt:new Date().toISOString(),count:e.length};
     localStorage.setItem(LS_CACHE+"_backup",JSON.stringify(backup));
+    // Also save dated backup
     const dateKey=LS_CACHE+"_"+new Date().toISOString().slice(0,10);
     localStorage.setItem(dateKey,JSON.stringify(backup));
   }catch(err){
-    // Storage full - clear old backups only
-    try{
-      Object.keys(localStorage)
-        .filter(k=>k.includes("_202")&&k.includes("backup"))
-        .slice(0,-2)
-        .forEach(k=>localStorage.removeItem(k));
-      localStorage.setItem(LS_CACHE,JSON.stringify(e));
-      localStorage.setItem("rk_master_backup",JSON.stringify(e));
-    }catch(e2){console.warn("Storage full");}
+    console.warn("Cache full — clearing old backups");
+    // Clear old dated backups to free space
+    Object.keys(localStorage).filter(k=>k.startsWith(LS_CACHE+"_20")).forEach(k=>localStorage.removeItem(k));
+    try{localStorage.setItem(LS_CACHE,JSON.stringify(e));}catch(e2){}
   }
 }
 function loadDD(){try{return JSON.parse(localStorage.getItem(LS_DD))||DEFAULT_DD;}catch{return DEFAULT_DD;}}
 function saveDD(d){localStorage.setItem(LS_DD,JSON.stringify(d));}
-
-// ── USAGE LEARNING SYSTEM ─────────────────────────────────────────────────────
-const LS_USAGE="rk_usage_"+URL_USER;
-const USAGE_START="rk_usage_start_"+URL_USER;
-
-function trackUsage(category,taskType){
-  try{
-    // Record first usage date
-    if(!localStorage.getItem(USAGE_START)){
-      localStorage.setItem(USAGE_START,new Date().toISOString());
-    }
-    const usage=JSON.parse(localStorage.getItem(LS_USAGE)||"{}");
-    const key=category+"|"+taskType;
-    usage[key]=(usage[key]||0)+1;
-    localStorage.setItem(LS_USAGE,JSON.stringify(usage));
-  }catch(e){}
-}
-
-function getLearnedButtons(defaultButtons){
-  try{
-    const usage=JSON.parse(localStorage.getItem(LS_USAGE)||"{}");
-    const startDate=localStorage.getItem(USAGE_START);
-    if(!startDate)return defaultButtons;
-    // Only personalise after 30 days of usage
-    const daysSinceStart=(new Date()-new Date(startDate))/(1000*60*60*24);
-    if(daysSinceStart<30)return defaultButtons;
-    // Sort by usage count
-    const sorted=[...defaultButtons].sort((a,b)=>{
-      const ka=a.c+"|"+a.t;
-      const kb=b.c+"|"+b.t;
-      return (usage[kb]||0)-(usage[ka]||0);
-    });
-    return sorted;
-  }catch(e){return defaultButtons;}
-}
-
-function getUsageStats(){
-  try{
-    const usage=JSON.parse(localStorage.getItem(LS_USAGE)||"{}");
-    const start=localStorage.getItem(USAGE_START);
-    const days=start?Math.round((new Date()-new Date(start))/(1000*60*60*24)):0;
-    return{usage,days,total:Object.values(usage).reduce((s,v)=>s+v,0)};
-  }catch(e){return{usage:{},days:0,total:0};}
-}
 
 // ── GOOGLE SHEETS API ─────────────────────────────────────────────────────────
 async function sheetsAPI(action,data={}){
@@ -682,7 +609,7 @@ function DropdownManager({dropdowns,onSave,onClose}){
 }
 
 // ── ENTRY FORM ────────────────────────────────────────────────────────────────
-const EMPTY_E={id:null,date:"",title:"",category:IS_FAMILY?"Personal":IS_SALES?"Sales - Order":"Business - Orders",taskType:"",person:"",account:"",vendor:"",property:"",financialType:"",paymentStatus:"",month:"",chemical:"",tags:[],notes:"",reminder:"",reminderNote:"",amount:"",attachments:[],link:"",linkLabel:"",isRecurring:false,createdAt:""};
+const EMPTY_E={id:null,date:"",title:"",category:"Business - Orders",taskType:"",person:"",account:"",vendor:"",property:"",financialType:"",paymentStatus:"",month:"",chemical:"",tags:[],notes:"",reminder:"",reminderNote:"",amount:"",attachments:[],link:"",linkLabel:"",isRecurring:false,createdAt:""};
 
 function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
   const [f,setF]=useState({...EMPTY_E,date:today(),id:genId(),createdAt:new Date().toISOString(),...initial});
@@ -700,26 +627,6 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
 
   return<div>
     <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{initial?.id?"✏️ Edit":"✨ New Entry"}</h2>
-    {URL_USER!=="main"&&!initial?.id&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14,padding:"10px 12px",background:IS_FAMILY?"#fff0f8":"#f0f8ff",border:"1.5px solid "+(IS_FAMILY?"#f0b0d0":"#b0d8f0"),borderRadius:10}}>
-      <div style={{width:"100%",fontSize:11,fontWeight:700,color:IS_FAMILY?"#8a005a":"#005a8a",marginBottom:6}}>⚡ Quick entry:</div>
-      {(IS_FAMILY?getLearnedButtons([
-        {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning",bg:"#c8006a"},
-        {l:"💰 Expense",c:"Personal - Expense",t:"Expense",bg:"#6a1a8a"},
-        {l:"💭 Thoughts",c:"Personal - Thoughts",t:"Thoughts & Ideas",bg:"#1a6a8a"},
-        {l:"⏰ Reminder",c:"Reminders",t:"Reminder / Task",bg:"#6a4a00"},
-        {l:"🛍 Shopping",c:"Personal - Shopping",t:"Shopping",bg:"#006a4a"},
-        {l:"📝 Notes",c:"Personal",t:"Notes",bg:"#4a4a4a"},
-      ]):getLearnedButtons([
-        {l:"📦 Order",c:"Sales - Order",t:"Orders Received",bg:"#1a5a8a"},
-        {l:"💰 Payment",c:"Sales - Payment",t:"Payment Collected",bg:"#1a6a2a"},
-        {l:"🚶 Visit",c:"Sales - Visit",t:"Customer Visit",bg:"#5a3a8a"},
-        {l:"🧾 Expense",c:"Sales - Expense",t:"Expense - Travel",bg:"#8a5a00"},
-        {l:"😟 Complaint",c:"Sales - Complaint",t:"Complaint Received",bg:"#8a1a1a"},
-        {l:"🏷 Competitor",c:"Intelligence - Competitor",t:"Competitor Spotted",bg:"#3a3a8a"},
-        {l:"💡 Idea",c:"Intelligence - New Brand",t:"New Product Idea",bg:"#6a4a00"},
-        {l:"⚠️ Problem",c:"Problem - Customer",t:"Pending Tasks",bg:"#7a3a00"},
-      ])).map(q=><button key={q.l} type="button" onClick={()=>{set("category",q.c);set("taskType",q.t);trackUsage(q.c,q.t);}} style={{padding:"7px 13px",borderRadius:8,border:"none",background:q.bg,color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>{q.l}</button>)}
-    </div>}
 
     {/* VOICE INPUT */}
     <VoiceInput onResult={applyVoiceData} dropdowns={dropdowns}/>
@@ -742,14 +649,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
       <div>
         <label className="lbl">Category</label>
         <div style={{display:"flex",gap:6}}>
-          <select className="inp" value={f.category} onChange={e=>set("category",e.target.value)} style={{flex:1}}>
-            {(IS_FAMILY?
-              dropdowns.categories.filter(c=>c.startsWith("Personal")||c.startsWith("Reminder")||c==="Misc"):
-              IS_SALES?
-              dropdowns.categories.filter(c=>c.startsWith("Sales")||c.startsWith("Intel")||c.startsWith("Problem")||c==="Misc"||c==="Personal"):
-              dropdowns.categories
-            ).map(c=><option key={c}>{c}</option>)}
-          </select>
+          <select className="inp" value={f.category} onChange={e=>set("category",e.target.value)} style={{flex:1}}>{dropdowns.categories.map(c=><option key={c}>{c}</option>)}</select>
           <button type="button" onClick={()=>{const v=prompt("New category name:");if(v&&v.trim()){addNew("categories",v.trim());set("category",v.trim());}}} style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:14,fontWeight:700,flexShrink:0}}>＋</button>
         </div>
       </div>
@@ -1016,8 +916,6 @@ function App(){
   const [filterStatus,setFilterStatus]=useState("");
   const [hideDone,setHideDone]=useState(false);
   const [showHidden,setShowHidden]=useState(false);
-  const [showAssign,setShowAssign]=useState(false);
-  const [assignEntry,setAssignEntry]=useState(null);
   const [sort,setSort]=useState("date_desc");
 
   useEffect(()=>{saveDD(dropdowns);},[dropdowns]);
@@ -1047,20 +945,23 @@ function App(){
 
   const saveEntry=async(entry)=>{
     setSaving(true);
-    const taggedEntry={...entry,loggedBy:URL_USER,loggedByName:CURRENT_USER.name,person:entry.person||(URL_USER!=="main"?CURRENT_USER.name:"")};
-    setEntries(p=>{const ex=p.find(x=>x.id===taggedEntry.id);const updated=ex?p.map(x=>x.id===taggedEntry.id?taggedEntry:x):[taggedEntry,...p];saveCache(updated);return updated;});
-    // Save to Sheets immediately - critical for recovery
-    sheetsAPI("save",{entry:taggedEntry}).then(r=>{
-      if(!r.error)setSyncStatus("✅ Saved · backed up to Sheets");
-      else setSyncStatus("📱 Saved locally · will sync when online");
-    }).catch(()=>setSyncStatus("📱 Saved locally · will sync when online"));
+    setEntries(p=>{const ex=p.find(x=>x.id===entry.id);const updated=ex?p.map(x=>x.id===entry.id?entry:x):[entry,...p];saveCache(updated);return updated;});
+    sheetsAPI("save",{entry}).then(r=>{
+      setSyncStatus(r.error?"📱 Saved locally · syncing...":"✅ Saved · backed up to Sheets");
+    }).catch(()=>setSyncStatus("📱 Saved locally"));
     if(entry.person&&!dropdowns.persons.includes(entry.person))addToDropdown("persons",entry.person);
     if(entry.vendor&&!dropdowns.vendors.includes(entry.vendor))addToDropdown("vendors",entry.vendor);
     if(entry.account&&!dropdowns.accounts.includes(entry.account))addToDropdown("accounts",entry.account);
     setSaving(false);setShowForm(false);setEditE(null);
   };
 
-
+  const delEntry=async(id)=>{
+    if(!window.confirm("Delete this entry?"))return;
+    if(!window.confirm("⚠️ Cannot be undone. Delete permanently?"))return;
+    setEntries(p=>{const u=p.filter(e=>e.id!==id);saveCache(u);return u;});
+    setViewE(null);
+    await sheetsAPI("delete",{id});
+  };
 
   const markDone=async(id)=>{
     const updated=entries.map(e=>e.id===id?{...e,tags:[...new Set([...e.tags||[],"Done"])]}:e);
@@ -1068,83 +969,17 @@ function App(){
     const entry=updated.find(e=>e.id===id);
     if(entry)await sheetsAPI("save",{entry});
   };
-
-  // ── ASSIGN TASK TO ANYONE ─────────────────────────────────────────────────
-  const assignTo=async(entry,toUser)=>{
-    const toConfig=USER_CONFIG[toUser]||{name:toUser};
-    const assigned={...entry,
-      assignedTo:toUser,
-      assignedBy:URL_USER,
-      assignedByName:CURRENT_USER.name,
-      assignedAt:new Date().toISOString(),
-      tags:[...new Set([...(entry.tags||[]),"Assigned","Pending"])],
-      isAssigned:true,
-      assigneeStatus:"",
-      assigneeNote:"",
-    };
-    await sheetsAPI("save",{entry:assigned});
-    const updated=entries.map(e=>e.id===entry.id?assigned:e);
-    setEntries(updated);saveCache(updated);
-    // Telegram notification
-    const msg="📋 Task assigned to "+toConfig.name+" by "+CURRENT_USER.name+":
-
-"+
-      "📌 "+assigned.title+
-      (assigned.amount?"
-💰 "+assigned.amount:"")+
-      (assigned.notes?"
-📝 "+assigned.notes.slice(0,100):"")+
-      "
-
-Open your tracker to view.";
-    fetch("https://api.telegram.org/bot8852628858:AAHAZ3ZjosHPrEC0OU8fDnRXBNcKnwO2gus/sendMessage",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chat_id:"8632288596",text:msg})
-    }).catch(()=>{});
-    setSyncStatus("✅ Assigned to "+toConfig.name);
-    setViewE(null);
-    setShowAssign(false);
-  };
-
-  const updateAssigned=async(entry,status,note)=>{
-    const updated={...entry,
-      assigneeStatus:status,
-      assigneeNote:note||"",
-      assigneeUpdatedAt:new Date().toISOString(),
-      assigneeUser:URL_USER,
-      assigneeName:CURRENT_USER.name,
-      tags:status==="Done"?
-        [...new Set([...(entry.tags||[]).filter(t=>t!=="Pending"),"Done","Assigned"])]:
-        [...new Set([...(entry.tags||[]),"Assigned","In Progress"])]
-    };
-    await sheetsAPI("save",{entry:updated});
-    const localUpdated=entries.map(e=>e.id===entry.id?updated:e);
-    setEntries(localUpdated);saveCache(localUpdated);
-    setViewE(null);
-    setSyncStatus("✅ Updated · "+entry.assignedByName+" will see this");
-  };
-
   const hideEntry=async(id)=>{
-    const updated=entries.map(e=>e.id===id?{...e,hidden:true,tags:[...new Set([...e.tags||[],"Hidden"])]}:e);
+    const updated=entries.map(e=>e.id===id?{...e,hidden:true}:e);
     setEntries(updated);saveCache(updated);setViewE(null);
     const entry=updated.find(e=>e.id===id);
-    if(entry)await sheetsAPI("save",{entry});
+    if(entry)sheetsAPI("save",{entry});
   };
-
   const unhideEntry=async(id)=>{
-    const updated=entries.map(e=>e.id===id?{...e,hidden:false,tags:(e.tags||[]).filter(t=>t!=="Hidden")}:e);
+    const updated=entries.map(e=>e.id===id?{...e,hidden:false}:e);
     setEntries(updated);saveCache(updated);
     const entry=updated.find(e=>e.id===id);
-    if(entry)await sheetsAPI("save",{entry});
-  };
-
-  const delEntry=async(id)=>{
-    // Double confirmation required
-    if(!window.confirm("Are you sure you want to delete this entry?"))return;
-    if(!window.confirm("⚠️ This cannot be undone. Delete permanently?"))return;
-    setEntries(p=>{const u=p.filter(e=>e.id!==id);saveCache(u);return u;});
-    setViewE(null);
-    await sheetsAPI("delete",{id});
+    if(entry)sheetsAPI("save",{entry});
   };
 
   const addToDropdown=(list,val)=>{
@@ -1289,39 +1124,27 @@ Open your tracker to view.";
           <button onClick={()=>setShowShare(true)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>🔗 Share</button>
           <button onClick={()=>setShowDD(true)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>⚙️</button>
           <button onClick={()=>setHideDone(h=>!h)} style={{...fSel,background:hideDone?"rgba(200,255,200,.15)":"rgba(255,255,255,.08)",color:hideDone?"#90f090":"#f0cc80",border:"1.5px solid "+(hideDone?"#4a9a4a":"#c8a060"),fontSize:11,fontWeight:600}}>{hideDone?"All":"Hide✅"}</button>
-          <button onClick={()=>setShowHidden(h=>!h)} style={{...fSel,background:showHidden?"rgba(255,200,100,.15)":"rgba(255,255,255,.08)",color:showHidden?"#ffcc88":"#f0cc80",border:"1.5px solid "+(showHidden?"#c8a060":"rgba(255,255,255,.3)"),fontSize:11,fontWeight:600}}>{showHidden?"Hide 👁":"👁"}</button>
+          <button onClick={()=>setShowHidden(h=>!h)} style={{...fSel,background:showHidden?"rgba(255,200,100,.15)":"rgba(255,255,255,.08)",color:showHidden?"#ffcc88":"#f0cc80",fontSize:11}}>👁</button>
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
-          {/* KRR quick buttons - always visible */}
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {[
-              {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash"},
-              {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning"},
-            ].map(q=><button key={q.l} onClick={()=>{
-              setEditE({category:q.c,taskType:q.t,person:q.p||""});
-              setShowForm(true);
-            }} style={{padding:"6px 12px",borderRadius:8,border:"none",
-              background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",
-              color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700,
-              boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>{q.l}</button>)}
-          </div>
-          {URL_USER!=="main"&&<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {(IS_FAMILY?[
-              {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
-              {l:"💰",c:"Personal - Expense",t:"Expense"},
-              {l:"💭",c:"Personal - Thoughts",t:"Thoughts & Ideas"},
-              {l:"⏰",c:"Reminders",t:"Reminder / Task"},
-              {l:"🛍",c:"Personal - Shopping",t:"Shopping"},
-              {l:"📝",c:"Personal",t:"Notes"},
-            ]:[
-              {l:"📦",c:"Sales - Order",t:"Orders Received"},
-              {l:"💰",c:"Sales - Payment",t:"Payment Collected"},
-              {l:"🚶",c:"Sales - Visit",t:"Customer Visit"},
-              {l:"🧾",c:"Sales - Expense",t:"Expense - Travel"},
-              {l:"😟",c:"Sales - Complaint",t:"Complaint Received"},
-              {l:"🏷",c:"Intelligence - Competitor",t:"Competitor Spotted"},
-            ]).map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t});trackUsage(q.c,q.t);setShowForm(true);}} style={{padding:"7px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,.15)",color:"#f5d890",cursor:"pointer",fontSize:16}}>{q.l}</button>)}
-          </div>}
+          {URL_USER==="main"&&[
+            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash"},
+            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning"},
+          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||""});setShowForm(true);}} style={{padding:"6px 12px",borderRadius:8,border:"none",background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{q.l}</button>)}
+          {IS_FAMILY&&[
+            {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
+            {l:"💰",c:"Personal - Expense",t:"Expense"},
+            {l:"💭",c:"Personal - Thoughts",t:"Thoughts"},
+            {l:"⏰",c:"Reminders",t:"Reminder / Task"},
+          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t});setShowForm(true);}} style={{padding:"7px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,.15)",color:"#f5d890",cursor:"pointer",fontSize:16}}>{q.l}</button>)}
+          {IS_SALES&&[
+            {l:"📦",c:"Sales - Order",t:"Orders Received"},
+            {l:"💰",c:"Sales - Payment",t:"Payment Collected"},
+            {l:"🚶",c:"Sales - Visit",t:"Customer Visit"},
+            {l:"🧾",c:"Sales - Expense",t:"Expense - Travel"},
+            {l:"😟",c:"Sales - Complaint",t:"Complaint Received"},
+            {l:"🏷",c:"Intelligence - Competitor",t:"Competitor Spotted"},
+          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t});setShowForm(true);}} style={{padding:"7px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,.15)",color:"#f5d890",cursor:"pointer",fontSize:16}}>{q.l}</button>)}
           <button onClick={()=>{setEditE(null);setShowForm(true);}} style={{padding:"7px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#e8a020,#c07010)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,boxShadow:"0 4px 14px rgba(200,120,0,.35)"}}>+ New</button>
         </div>
       </div>
@@ -1337,67 +1160,6 @@ Open your tracker to view.";
         {(filterCat!=="All"||filterTag||filterPerson||filterAccount||filterVendor||filterStatus||search)&&<button onClick={()=>{setFilterCat("All");setFilterTag("");setFilterPerson("");setFilterAccount("");setFilterVendor("");setFilterStatus("");setSearch("");}} style={{...fSel,background:"rgba(255,100,100,.2)",color:"#ffb0b0",border:"1px solid #ff8888",fontSize:11}}>✕ Clear</button>}
       </div>
     </div>
-
-    {/* ASSIGNED TASKS - Anyone sees tasks assigned to them */}
-    {URL_USER!=="main"&&(()=>{
-      const assigned=entries.filter(e=>e.assignedTo===URL_USER&&!e.tags?.includes("Done"));
-      if(assigned.length===0)return null;
-      return<div style={{background:"linear-gradient(135deg,#fff8e8,#fff3d0)",border:"2px solid #c8a060",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
-        <div style={{fontWeight:700,fontSize:13,color:"#2a1800",marginBottom:10}}>
-          🔔 Tasks from Krr ({assigned.length})
-        </div>
-        {assigned.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #e8dcc8"}}>
-          <div style={{fontWeight:700,fontSize:14,color:"#2a1600",marginBottom:4}}>{e.title}</div>
-          {e.amount&&<div style={{fontSize:13,color:"#1a5a00",fontWeight:700,marginBottom:4}}>{e.amount}</div>}
-          {e.notes&&<div style={{fontSize:12,color:"#5a3800",marginBottom:8}}>{e.notes}</div>}
-          {e.prakashStatus&&<div style={{fontSize:11,color:"#7a5800",marginBottom:6,fontStyle:"italic"}}>Last update: {e.prakashStatus} — {e.prakashNote}</div>}
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <button onClick={()=>{
-              const note=prompt("Add update note (optional):")||"";
-              updateAssigned(e,"In Progress",note);
-            }} style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#1a5a8a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>
-              🔄 In Progress
-            </button>
-            <button onClick={()=>{
-              const note=prompt("Completion note (optional):")||"Done";
-              updateAssigned(e,"Done",note);
-            }} style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#1a7a1a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>
-              ✅ Done
-            </button>
-            <button onClick={()=>setViewE(e)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid #c8a060",background:"#fff8ee",color:"#8a5800",cursor:"pointer",fontSize:12}}>
-              View
-            </button>
-          </div>
-        </div>)}
-      </div>;
-    })()}
-
-    {/* TASKS ASSIGNED TO KRR - from anyone */}
-    {URL_USER==="main"&&(()=>{
-      const assignedToMe=entries.filter(e=>e.assignedTo==="main"&&!e.tags?.includes("Done"));
-      const updatedByOthers=entries.filter(e=>e.assignedBy==="main"&&e.assigneeStatus&&!e.seenByKrr);
-      return<>
-        {assignedToMe.length>0&&<div style={{background:"linear-gradient(135deg,#fff0e8,#ffe8d0)",border:"2px solid #e8a060",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
-          <div style={{fontWeight:700,fontSize:13,color:"#5a2a00",marginBottom:10}}>🔔 Assigned to You ({assignedToMe.length})</div>
-          {assignedToMe.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #e8d0c8"}}>
-            <div style={{fontWeight:700,fontSize:14}}>{e.title}</div>
-            <div style={{fontSize:11,color:"#7a5a40"}}>From: {e.assignedByName} · {e.date}</div>
-            {e.amount&&<div style={{fontSize:13,color:"#1a5a00",fontWeight:700}}>{e.amount}</div>}
-            <div style={{display:"flex",gap:8,marginTop:8}}>
-              <button onClick={()=>{const n=prompt("Update note:")||"";updateAssigned(e,"In Progress",n);}} style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#1a5a8a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>🔄 In Progress</button>
-              <button onClick={()=>{const n=prompt("Done note:")||"Done";updateAssigned(e,"Done",n);}} style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#1a7a1a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>
-            </div>
-          </div>)}
-        </div>}
-        {updatedByOthers.length>0&&<div style={{background:"linear-gradient(135deg,#e8f4e8,#d8f0d8)",border:"2px solid #88c888",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
-          <div style={{fontWeight:700,fontSize:13,color:"#1a5a1a",marginBottom:10}}>📋 Team Updates ({updatedByOthers.length})</div>
-          {updatedByOthers.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #c8e8c8"}}>
-            <div style={{fontWeight:700,fontSize:14}}>{e.title}</div>
-            <div style={{fontSize:12,color:"#1a5a1a",marginTop:4}}>{e.assigneeName}: <b>{e.assigneeStatus}</b>{e.assigneeNote?" — "+e.assigneeNote:""}</div>
-          </div>)}
-        </div>}
-      </>;
-    })()}
 
     {/* TABLE */}
     <div style={{padding:"10px 8px 40px",overflowX:"auto"}}>
@@ -1416,10 +1178,9 @@ Open your tracker to view.";
           <tbody>
             {filtered.map((e,idx)=>{
               const ov=isOverdue(e.reminder)&&!e.tags?.includes("Done");
-              const isHidden=e.hidden;
               const isDone=e.tags?.includes("Done");
               const isSP=e.tags?.includes("Super Pending");
-              return<tr key={e.id} className="rh" style={{background:isHidden?"#f0f0f0":getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:isHidden?.4:isDone?.72:1,outline:isSP?"2px solid #8B0000":"none"}}>
+              return<tr key={e.id} className="rh" style={{background:getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:isDone?.72:1,outline:isSP?"2px solid #8B0000":"none"}}>
                 <td style={{padding:"7px 8px",fontSize:11,color:"#b09060"}}>{isSP?"🔴":idx+1}</td>
                 <td style={{padding:"7px 8px",fontSize:11,whiteSpace:"nowrap",color:"#5a3800"}}>{fmtDate(e.date)}{e.month&&<div style={{fontSize:9,color:"#9a7040"}}>{e.month}</div>}</td>
                 <td style={{padding:"7px 8px",minWidth:140,maxWidth:200}}>
@@ -1433,7 +1194,6 @@ Open your tracker to view.";
                   {e.person&&<div style={{color:"#3a5a8a",fontSize:10}}>👤 {e.person}</div>}
                   {e.vendor&&<div style={{color:"#5a3a8a",fontSize:10}}>🏭 {e.vendor}</div>}
                   {e.property&&<div style={{color:"#5a3a5a",fontSize:9}}>🏠 {e.property}</div>}
-                  {e.loggedBy&&e.loggedBy!=="main"&&USER_CONFIG[e.loggedBy]&&<span style={{fontSize:9,background:USER_CONFIG[e.loggedBy].bg,color:USER_CONFIG[e.loggedBy].color,borderRadius:10,padding:"1px 6px",display:"inline-block",marginTop:2}}>{USER_CONFIG[e.loggedBy].name}</span>}
                 </td>
                 <td style={{padding:"7px 8px",fontSize:11,minWidth:85}}>
                   {e.account&&<div style={{color:"#3a6000",fontWeight:600,fontSize:10,marginBottom:1}}>🏦 {e.account}</div>}
@@ -1450,7 +1210,7 @@ Open your tracker to view.";
                   <button onClick={()=>setViewE(e)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #d0b880",background:"#fff8ee",color:"#8a5800",cursor:"pointer",fontSize:10,marginRight:3}}>View</button>
                   <button onClick={()=>shareEntry(e)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:10,marginRight:3}}>📤</button>
                   {!isDone&&<button onClick={()=>markDone(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:10,marginRight:3}}>✅</button>}
-                  {!e.hidden&&<button onClick={()=>hideEntry(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #aaa",background:"#f5f5f5",color:"#666",cursor:"pointer",fontSize:10}}>Hide</button>}
+                  {!e.hidden&&<button onClick={()=>hideEntry(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #ccc",background:"#f5f5f5",color:"#666",cursor:"pointer",fontSize:10}}>Hide</button>}
                   {e.hidden&&<button onClick={()=>unhideEntry(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #c8a060",background:"#fff8ee",color:"#8a5800",cursor:"pointer",fontSize:10}}>Show</button>}
                 </td>
               </tr>;
@@ -1474,12 +1234,10 @@ Open your tracker to view.";
             <h2 style={{margin:0,fontSize:18,color:"#2a1a00"}}>{viewE.title}</h2></div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
             {!viewE.tags?.includes("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
-            {!viewE.assignedTo&&<button onClick={()=>{setAssignEntry(viewE);setShowAssign(true);}} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"linear-gradient(135deg,#c8860a,#a06010)",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>📋 Assign</button>}
-            {viewE.assignedTo&&<div style={{padding:"6px 12px",fontSize:11,color:"#1a5a1a",fontWeight:700,background:"#edfaed",borderRadius:7,border:"1px solid #88cc88"}}>✅ Assigned to {USER_CONFIG[viewE.assignedTo]?.name||viewE.assignedTo}{viewE.assigneeStatus?" · "+viewE.assigneeStatus:""}</div>}
             <button onClick={()=>shareEntry(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:12,fontWeight:700}}>📤 Share</button>
             <button onClick={()=>shareEntryHTML(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #5a3a8a",background:"#f5eeff",color:"#5a1a8a",cursor:"pointer",fontSize:12}}>🖼 Card</button>
             <button onClick={()=>{setEditE(viewE);setViewE(null);setShowForm(true);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:12}}>✏️</button>
-            <button onClick={()=>hideEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #aaa",background:"#f5f5f5",color:"#555",cursor:"pointer",fontSize:12}}>👁 Hide</button>
+            <button onClick={()=>hideEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #ccc",background:"#f5f5f5",color:"#555",cursor:"pointer",fontSize:12}}>👁 Hide</button>
             <button onClick={()=>delEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #f5a8ab",background:"#fff5f5",color:"#c00",cursor:"pointer",fontSize:12}}>🗑</button>
           </div>
         </div>
@@ -1506,39 +1264,6 @@ Open your tracker to view.";
     <Modal open={showAI} onClose={()=>setShowAI(false)} wide><AIPanel entries={entries} onClose={()=>setShowAI(false)}/></Modal>
     <Modal open={showDD} onClose={()=>setShowDD(false)} wide><DropdownManager dropdowns={dropdowns} onSave={saveDropdowns} onClose={()=>setShowDD(false)}/></Modal>
     <Modal open={showShare} onClose={()=>setShowShare(false)} wide><SharePanel/></Modal>
-    <Modal open={showAssign} onClose={()=>setShowAssign(false)}>
-      {assignEntry&&<div>
-        <h2 style={{margin:"0 0 12px",fontSize:18}}>📋 Assign Task</h2>
-        <div style={{background:"#fffdf5",border:"1px solid #e8dcc8",borderRadius:8,padding:"10px 13px",marginBottom:14}}>
-          <div style={{fontWeight:700}}>{assignEntry.title}</div>
-          {assignEntry.amount&&<div style={{color:"#1a5a00",fontWeight:700}}>{assignEntry.amount}</div>}
-        </div>
-        <div style={{marginBottom:12}}>
-          <label className="lbl">Assign to:</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6}}>
-            {[
-              {user:"main",label:"👤 Krr (me)"},
-              {user:"prakash",label:"👤 Prakash"},
-              {user:"maadhu",label:"👤 Maadhu"},
-              {user:"virupaksha",label:"👤 Virupaksha"},
-              {user:"satish",label:"👤 Satish"},
-              {user:"sebi",label:"👤 Sebi"},
-              {user:"sugeesh",label:"👤 Sugeesh"},
-              {user:"sunil",label:"👤 Sunil"},
-              {user:"biju",label:"👤 Biju"},
-              {user:"sadasivan",label:"👤 Sadasivan"},
-              {user:"sooraj",label:"👤 Sooraj"},
-              {user:"murugan",label:"👤 Murugan"},
-            ].filter(u=>u.user!==URL_USER).map(u=><button key={u.user}
-              onClick={()=>assignTo(assignEntry,u.user)}
-              style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#2a1800",cursor:"pointer",fontSize:13,fontWeight:600}}>
-              {u.label}
-            </button>)}
-          </div>
-        </div>
-        <div style={{display:"flex",justifyContent:"flex-end"}}><button className="bgh" onClick={()=>setShowAssign(false)}>Cancel</button></div>
-      </div>}
-    </Modal>
   </div>;
 }
 
