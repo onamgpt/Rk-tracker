@@ -1015,6 +1015,7 @@ function App(){
   const [filterVendor,setFilterVendor]=useState("");
   const [filterStatus,setFilterStatus]=useState("");
   const [hideDone,setHideDone]=useState(false);
+  const [showHidden,setShowHidden]=useState(false);
   const [sort,setSort]=useState("date_desc");
 
   useEffect(()=>{saveDD(dropdowns);},[dropdowns]);
@@ -1057,17 +1058,36 @@ function App(){
     setSaving(false);setShowForm(false);setEditE(null);
   };
 
-  const delEntry=async(id)=>{
-    setEntries(p=>{const u=p.filter(e=>e.id!==id);saveCache(u);return u;});
-    setViewE(null);setShowDupes(false);
-    await sheetsAPI("delete",{id});
-  };
+
 
   const markDone=async(id)=>{
     const updated=entries.map(e=>e.id===id?{...e,tags:[...new Set([...e.tags||[],"Done"])]}:e);
     setEntries(updated);saveCache(updated);setViewE(null);
     const entry=updated.find(e=>e.id===id);
     if(entry)await sheetsAPI("save",{entry});
+  };
+
+  const hideEntry=async(id)=>{
+    const updated=entries.map(e=>e.id===id?{...e,hidden:true,tags:[...new Set([...e.tags||[],"Hidden"])]}:e);
+    setEntries(updated);saveCache(updated);setViewE(null);
+    const entry=updated.find(e=>e.id===id);
+    if(entry)await sheetsAPI("save",{entry});
+  };
+
+  const unhideEntry=async(id)=>{
+    const updated=entries.map(e=>e.id===id?{...e,hidden:false,tags:(e.tags||[]).filter(t=>t!=="Hidden")}:e);
+    setEntries(updated);saveCache(updated);
+    const entry=updated.find(e=>e.id===id);
+    if(entry)await sheetsAPI("save",{entry});
+  };
+
+  const delEntry=async(id)=>{
+    // Double confirmation required
+    if(!window.confirm("Are you sure you want to delete this entry?"))return;
+    if(!window.confirm("⚠️ This cannot be undone. Delete permanently?"))return;
+    setEntries(p=>{const u=p.filter(e=>e.id!==id);saveCache(u);return u;});
+    setViewE(null);
+    await sheetsAPI("delete",{id});
   };
 
   const addToDropdown=(list,val)=>{
@@ -1105,6 +1125,7 @@ function App(){
   const allVendors=[...new Set([...dropdowns.vendors,...entries.map(e=>e.vendor).filter(Boolean)])];
 
   const filtered=useMemo(()=>entries.filter(e=>{
+    if(e.hidden&&!showHidden)return false;
     if(hideDone&&e.tags?.includes("Done"))return false;
     if(filterCat!=="All"&&e.category!==filterCat)return false;
     if(filterTag&&!e.tags?.includes(filterTag))return false;
@@ -1211,6 +1232,7 @@ function App(){
           <button onClick={()=>setShowShare(true)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>🔗 Share</button>
           <button onClick={()=>setShowDD(true)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>⚙️</button>
           <button onClick={()=>setHideDone(h=>!h)} style={{...fSel,background:hideDone?"rgba(200,255,200,.15)":"rgba(255,255,255,.08)",color:hideDone?"#90f090":"#f0cc80",border:"1.5px solid "+(hideDone?"#4a9a4a":"#c8a060"),fontSize:11,fontWeight:600}}>{hideDone?"All":"Hide✅"}</button>
+          <button onClick={()=>setShowHidden(h=>!h)} style={{...fSel,background:showHidden?"rgba(255,200,100,.15)":"rgba(255,255,255,.08)",color:showHidden?"#ffcc88":"#f0cc80",border:"1.5px solid "+(showHidden?"#c8a060":"rgba(255,255,255,.3)"),fontSize:11,fontWeight:600}}>{showHidden?"Hide 👁":"👁"}</button>
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
           {/* KRR quick buttons - always visible */}
@@ -1276,9 +1298,10 @@ function App(){
           <tbody>
             {filtered.map((e,idx)=>{
               const ov=isOverdue(e.reminder)&&!e.tags?.includes("Done");
+              const isHidden=e.hidden;
               const isDone=e.tags?.includes("Done");
               const isSP=e.tags?.includes("Super Pending");
-              return<tr key={e.id} className="rh" style={{background:getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:isDone?.72:1,outline:isSP?"2px solid #8B0000":"none"}}>
+              return<tr key={e.id} className="rh" style={{background:isHidden?"#f0f0f0":getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:isHidden?.4:isDone?.72:1,outline:isSP?"2px solid #8B0000":"none"}}>
                 <td style={{padding:"7px 8px",fontSize:11,color:"#b09060"}}>{isSP?"🔴":idx+1}</td>
                 <td style={{padding:"7px 8px",fontSize:11,whiteSpace:"nowrap",color:"#5a3800"}}>{fmtDate(e.date)}{e.month&&<div style={{fontSize:9,color:"#9a7040"}}>{e.month}</div>}</td>
                 <td style={{padding:"7px 8px",minWidth:140,maxWidth:200}}>
@@ -1308,7 +1331,9 @@ function App(){
                 <td style={{padding:"7px 6px",whiteSpace:"nowrap"}}>
                   <button onClick={()=>setViewE(e)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #d0b880",background:"#fff8ee",color:"#8a5800",cursor:"pointer",fontSize:10,marginRight:3}}>View</button>
                   <button onClick={()=>shareEntry(e)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:10,marginRight:3}}>📤</button>
-                  {!isDone&&<button onClick={()=>markDone(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:10}}>✅</button>}
+                  {!isDone&&<button onClick={()=>markDone(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:10,marginRight:3}}>✅</button>}
+                  {!e.hidden&&<button onClick={()=>hideEntry(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #aaa",background:"#f5f5f5",color:"#666",cursor:"pointer",fontSize:10}}>Hide</button>}
+                  {e.hidden&&<button onClick={()=>unhideEntry(e.id)} style={{padding:"3px 8px",borderRadius:6,border:"1px solid #c8a060",background:"#fff8ee",color:"#8a5800",cursor:"pointer",fontSize:10}}>Show</button>}
                 </td>
               </tr>;
             })}
@@ -1334,7 +1359,8 @@ function App(){
             <button onClick={()=>shareEntry(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:12,fontWeight:700}}>📤 Share</button>
             <button onClick={()=>shareEntryHTML(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #5a3a8a",background:"#f5eeff",color:"#5a1a8a",cursor:"pointer",fontSize:12}}>🖼 Card</button>
             <button onClick={()=>{setEditE(viewE);setViewE(null);setShowForm(true);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:12}}>✏️</button>
-            <button onClick={()=>{if(window.confirm("Delete?"))delEntry(viewE.id);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #f5a8ab",background:"#fff5f5",color:"#c00",cursor:"pointer",fontSize:12}}>🗑</button>
+            <button onClick={()=>hideEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #aaa",background:"#f5f5f5",color:"#555",cursor:"pointer",fontSize:12}}>👁 Hide</button>
+            <button onClick={()=>delEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #f5a8ab",background:"#fff5f5",color:"#c00",cursor:"pointer",fontSize:12}}>🗑</button>
           </div>
         </div>
         {viewE.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{viewE.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
