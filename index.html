@@ -345,7 +345,7 @@ function Thumb({att,small}){
     }catch(e){
       // Fallback: open data URL directly
       const w=window.open("","_blank");
-      if(w){w.document.write(`<img src="${att.data}" style="max-width:100%" />`);w.document.close();}
+      if(w){w.document.write("<img src='"+att.data+"' style='max-width:100%' />");w.document.close();}
     }
   };
   if(att.type?.startsWith("image/"))return<div onClick={openAtt} style={{...b,overflow:"hidden",cursor:"zoom-in"}}><img src={att.data} alt={att.name||"image"} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
@@ -647,7 +647,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
       // For multiple bills - save all except first directly, open first in form
       results.slice(1).forEach(r=>onSave({...r,id:r.id||genId()}));
       applyScanData(results[0]);
-      if(results.length>1)alert(`✅ ${results.length} bills scanned! First bill loaded in form. Other ${results.length-1} saved automatically.`);
+      if(results.length>1)alert("✅ "+results.length+" bills scanned! First bill loaded in form. Other "+(results.length-1)+" saved automatically.");
     }}/>
 
     <div style={G2}>
@@ -834,7 +834,7 @@ function shareEntryHTML(entry){
   const imgs=atts.filter(a=>a.type?.startsWith("image/"));
   const docs=atts.filter(a=>!a.type?.startsWith("image/"));
 
-  const imgHtml=imgs.map(a=>`<img src="${a.data}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8" onclick="window.open(this.src)" />`).join("");
+  const imgHtml=imgs.map(a=>"<img src='"+a.data+"' style='max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8' onclick='window.open(this.src)' />").join("");
   const docHtml=docs.map(a=>`<a href="${a.data}" target="_blank" download="${a.name||"file"}" style="display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0">📄 ${a.name||"Download File"}</a>`).join("");
 
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
@@ -855,14 +855,14 @@ function shareEntryHTML(entry){
       <div style="font-size:18px;font-weight:700">${entry.title}</div>
       <div style="font-size:11px;color:#c8a860;margin-top:4px">📅 ${entry.date||""}${entry.category?" · "+entry.category:""}</div>
     </div>
-    ${entry.taskType?`<div class="field"><span>📌</span><span>${entry.taskType}</span></div>`:""}
-    ${entry.person?`<div class="field"><span>👤</span><span>${entry.person}</span></div>`:""}
-    ${entry.vendor?`<div class="field"><span>🏭</span><span>${entry.vendor}</span></div>`:""}
-    ${entry.amount?`<div class="field"><span>💰</span><b style="color:#1a5a00">${entry.amount}</b></div>`:""}
-    ${entry.paymentStatus?`<div class="field"><span>💳</span><span>${entry.paymentStatus}</span></div>`:""}
-    ${entry.notes?`<div class="notes">📝 ${entry.notes}</div>`:""}
-    ${imgHtml?`<div style="margin-top:12px">${imgHtml}</div>`:""}
-    ${docHtml?`<div style="margin-top:8px">${docHtml}</div>`:""}
+    ${entry.taskType?"<div class='field'><span>📌</span><span>"+entry.taskType+"</span></div>":""}
+    ${entry.person?"<div class='field'><span>👤</span><span>"+entry.person+"</span></div>":""}
+    ${entry.vendor?"<div class='field'><span>🏭</span><span>"+entry.vendor+"</span></div>":""}
+    ${entry.amount?"<div class='field'><span>💰</span><b style='color:#1a5a00'>"+entry.amount+"</b></div>":""}
+    ${entry.paymentStatus?"<div class='field'><span>💳</span><span>"+entry.paymentStatus+"</span></div>":""}
+    ${entry.notes?"<div class='notes'>📝 "+entry.notes+"</div>":""}
+    ${imgHtml?"<div style='margin-top:12px'>"+imgHtml+"</div>":""}
+    ${docHtml?"<div style='margin-top:8px'>"+docHtml+"</div>":""}
     <div class="footer">🌿 Onam Agarbathi Pvt. Ltd. · RK Life Tracker · Read only</div>
     <button class="share-btn" onclick="if(navigator.share){navigator.share({title:'${entry.title}',text:document.body.innerText});}else{window.print();}">📤 Share / Save as PDF</button>
   </div></body></html>`);
