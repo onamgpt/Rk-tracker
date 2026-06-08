@@ -71,6 +71,31 @@ function saveCache(entries){
   }catch(err){}
 }
 
+function sanitize(e){
+  if(!e||typeof e!=="object")return null;
+  return {
+    id:String(e.id||""),
+    title:String(e.title||""),
+    date:String(e.date||""),
+    category:String(e.category||""),
+    taskType:String(e.taskType||""),
+    person:String(e.person||""),
+    vendor:String(e.vendor||""),
+    account:String(e.account||""),
+    amount:String(e.amount||""),
+    paymentStatus:String(e.paymentStatus||""),
+    financialType:String(e.financialType||""),
+    notes:String(e.notes||""),
+    reminder:String(e.reminder||""),
+    tags:Array.isArray(e.tags)?e.tags:[],
+    attachments:Array.isArray(e.attachments)?e.attachments:[],
+    createdAt:String(e.createdAt||""),
+    loggedBy:String(e.loggedBy||""),
+    loggedByName:String(e.loggedByName||""),
+    hidden:!!e.hidden
+  };
+}
+
 function loadCache(){
   try{
     const keys=[LSK,LSK_MASTER,"rk_cache_v2_main","rk_cache_v2_"+URL_USER,"rk_master_backup","rk_cache_v2"];
@@ -81,7 +106,7 @@ function loadCache(){
         if(!d)return;
         if(d.entries)d=d.entries;
         if(d.e)d=d.e;
-        if(Array.isArray(d))d.forEach(function(e){if(e&&e.id&&e.title)all[e.id]=e;});
+        if(Array.isArray(d))d.forEach(function(e){if(e&&e.id&&e.title){var s=sanitize(e);if(s&&s.id)all[s.id]=s;}});
       }catch(ex){}
     });
     const r=Object.values(all);
@@ -494,7 +519,7 @@ function App(){
     sheetsAPI("getAll").then(function(r){
       if(r.error||!r.entries)return;
       if(r.entries.length>0){
-        const sm={};r.entries.forEach(function(e){sm[e.id]=e;});
+        const sm={};r.entries.forEach(function(e){if(e&&e.id){var s=sanitize(e);if(s)sm[s.id]=s;}});
         const lm={};cached.forEach(function(e){lm[e.id]=e;});
         const merged=Object.values(Object.assign({},sm,lm));
         merged.sort(function(a,b){return(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||"");});
@@ -579,7 +604,7 @@ function App(){
         if(!d)return;
         if(d.entries)d=d.entries;
         if(d.e)d=d.e;
-        if(Array.isArray(d))d.forEach(function(e){if(e&&e.id&&e.title)all[e.id]=e;});
+        if(Array.isArray(d))d.forEach(function(e){if(e&&e.id&&e.title){var s=sanitize(e);if(s&&s.id)all[s.id]=s;}});
       }catch(ex){}
     });
     const merged=Object.values(all);
