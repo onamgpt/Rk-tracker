@@ -109,7 +109,27 @@ function fmtDate(d){if(!d)return"—";return new Date(d+"T00:00:00").toLocaleDat
 function fmtDT(d){if(!d)return"—";return new Date(d).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
 function isOverdue(r){return r&&new Date(r)<new Date();}
 
-function loadCache(){try{return JSON.parse(localStorage.getItem(LS_CACHE))||[];}catch{return[];}}
+function loadCache(){
+  try{
+    // Check current key first
+    const current=JSON.parse(localStorage.getItem(LS_CACHE)||"[]");
+    // Also check all legacy keys and merge
+    const legacyKeys=["rk_cache_v2","rk_cache_v2_main","rk_cache","rk_entries"];
+    const allEntries={};
+    // Add legacy entries first
+    legacyKeys.forEach(k=>{
+      try{
+        const d=JSON.parse(localStorage.getItem(k)||"[]");
+        if(Array.isArray(d))d.forEach(e=>{if(e.id)allEntries[e.id]=e;});
+      }catch(e){}
+    });
+    // Current key takes priority
+    if(Array.isArray(current))current.forEach(e=>{if(e.id)allEntries[e.id]=e;});
+    const merged=Object.values(allEntries);
+    merged.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    return merged;
+  }catch{return[];}
+}
 function saveCache(e){
   try{
     localStorage.setItem(LS_CACHE,JSON.stringify(e));
