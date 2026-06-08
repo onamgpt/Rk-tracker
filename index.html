@@ -1128,9 +1128,10 @@ function App(){
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
           {URL_USER==="main"&&[
-            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash"},
-            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning"},
-          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||""});setShowForm(true);}} style={{padding:"6px 12px",borderRadius:8,border:"none",background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{q.l}</button>)}
+            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash",bg:"#1a5a8a"},
+            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning",bg:"#c8006a"},
+            {l:"⚠️ Pending",c:"Business - Orders",t:"Pending Tasks",bg:"#c00",tags:["Pending","Super Pending"]},
+          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||"",tags:q.tags||["Pending"]});setShowForm(true);}} style={{padding:"6px 12px",borderRadius:8,border:"none",background:q.bg,color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700,boxShadow:q.bg==="#c00"?"0 2px 8px rgba(200,0,0,.4)":"0 2px 8px rgba(0,0,0,.2)"}}>{q.l}</button>)}
           {IS_FAMILY&&[
             {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
             {l:"💰",c:"Personal - Expense",t:"Expense"},
