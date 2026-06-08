@@ -314,7 +314,7 @@ Flag risks, overdue items, action items. Use ₹ formatting with lakhs/crores no
     return "["+e.date+"] "+e.title+"|Cat:"+(e.category||"-")+"|Type:"+(e.taskType||"-")+"|Person:"+(e.person||"-")+"|Vendor:"+(e.vendor||"-")+"|Account:"+(e.account||"-")+"|Amount:"+(e.amount||"-")+"|Status:"+(e.paymentStatus||"-")+"|Tags:"+(e.tags||[]).join(",")+"|Notes:"+notesFull+hasAtt;
   }).join("\n")const summary=entries.slice(0,100).map(function(e){
     return "["+e.date+"] "+e.title+"|Type:"+(e.taskType||"-")+"|Person:"+(e.person||"-")+"|Account:"+(e.account||"-")+"|Amount:"+(e.amount||"-")+"|Status:"+(e.paymentStatus||"-")+"|Tags:"+(e.tags||[]).join(",")+"|Notes:"+(e.notes||"").slice(0,60);
-  }).join("\n")notesFull}${hasAtt}`;
+  }).join("\n");
   }).join("\n");
 
   return await claudeAPI(
