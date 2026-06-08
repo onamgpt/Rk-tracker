@@ -715,7 +715,7 @@ function App(){
                 ),
                 React.createElement("div",{style:{display:"flex",gap:6,flexWrap:"wrap",marginTop:3}},
                   e.person&&React.createElement("span",{style:{fontSize:11,color:"#3a5a8a"}},"👤 "+e.person),
-                  e.amount&&React.createElement("span",{style:{fontSize:12,fontWeight:700,color:"#1a5a00"}},"₹ "+e.amount.replace("₹","")),
+                  e.amount&&React.createElement("span",{style:{fontSize:12,fontWeight:700,color:"#1a5a00"}},safeStr(e.amount)),
                   e.paymentStatus&&e.paymentStatus!=="Payment Pending"&&React.createElement("span",{style:{fontSize:10,background:"#edfaed",color:"#1a5a1a",borderRadius:10,padding:"1px 6px"}},e.paymentStatus),
                   loggedUser&&React.createElement("span",{style:{fontSize:10,background:loggedUser.bg,color:loggedUser.col,borderRadius:10,padding:"1px 6px"}},loggedUser.name)
                 )
