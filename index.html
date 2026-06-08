@@ -1067,6 +1067,58 @@ function App(){
     if(entry)await sheetsAPI("save",{entry});
   };
 
+  // ── ASSIGN TO PRAKASH ──────────────────────────────────────────────────────
+  const assignToPrakash=async(entry)=>{
+    const assigned={...entry,
+      assignedTo:"prakash",
+      assignedBy:"main",
+      assignedByName:"Krr",
+      assignedAt:new Date().toISOString(),
+      tags:[...new Set([...(entry.tags||[]),"Assigned","Pending"])],
+      isAssigned:true
+    };
+    // Save to sheets with assigned flag - Prakash will see it
+    const r=await sheetsAPI("save",{entry:assigned});
+    // Update local copy too
+    const updated=entries.map(e=>e.id===entry.id?assigned:e);
+    setEntries(updated);saveCache(updated);
+    // Notify via Telegram
+    const msg="📋 Task assigned to you by Krr:
+
+"+
+      "📌 "+assigned.title+
+      (assigned.amount?"
+💰 "+assigned.amount:"")+
+      (assigned.notes?"
+📝 "+assigned.notes.slice(0,100):"")+
+      "
+
+Open your tracker to view and update.";
+    fetch("https://api.telegram.org/bot8852628858:AAHAZ3ZjosHPrEC0OU8fDnRXBNcKnwO2gus/sendMessage",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id:"8632288596",text:msg})
+    }).catch(()=>{});
+    setSyncStatus("✅ Assigned to Prakash");
+    setViewE(null);
+  };
+
+  const updateAssigned=async(entry,status,note)=>{
+    // Prakash updates an assigned task
+    const updated={...entry,
+      prakashStatus:status,
+      prakashNote:note||"",
+      prakashUpdatedAt:new Date().toISOString(),
+      tags:status==="Done"?
+        [...new Set([...(entry.tags||[]).filter(t=>t!=="Pending"),"Done","Assigned"])]:
+        [...new Set([...(entry.tags||[]),"Assigned"])]
+    };
+    await sheetsAPI("save",{entry:updated});
+    const localUpdated=entries.map(e=>e.id===entry.id?updated:e);
+    setEntries(localUpdated);saveCache(localUpdated);
+    setViewE(null);
+    setSyncStatus("✅ Updated and synced to Krr");
+  };
+
   const hideEntry=async(id)=>{
     const updated=entries.map(e=>e.id===id?{...e,hidden:true,tags:[...new Set([...e.tags||[],"Hidden"])]}:e);
     setEntries(updated);saveCache(updated);setViewE(null);
@@ -1281,6 +1333,59 @@ function App(){
       </div>
     </div>
 
+    {/* ASSIGNED TASKS - Prakash sees tasks from Krr */}
+    {URL_USER==="prakash"&&(()=>{
+      const assigned=entries.filter(e=>e.assignedTo==="prakash"&&!e.tags?.includes("Done"));
+      if(assigned.length===0)return null;
+      return<div style={{background:"linear-gradient(135deg,#fff8e8,#fff3d0)",border:"2px solid #c8a060",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#2a1800",marginBottom:10}}>
+          🔔 Tasks from Krr ({assigned.length})
+        </div>
+        {assigned.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #e8dcc8"}}>
+          <div style={{fontWeight:700,fontSize:14,color:"#2a1600",marginBottom:4}}>{e.title}</div>
+          {e.amount&&<div style={{fontSize:13,color:"#1a5a00",fontWeight:700,marginBottom:4}}>{e.amount}</div>}
+          {e.notes&&<div style={{fontSize:12,color:"#5a3800",marginBottom:8}}>{e.notes}</div>}
+          {e.prakashStatus&&<div style={{fontSize:11,color:"#7a5800",marginBottom:6,fontStyle:"italic"}}>Last update: {e.prakashStatus} — {e.prakashNote}</div>}
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button onClick={()=>{
+              const note=prompt("Add update note (optional):")||"";
+              updateAssigned(e,"In Progress",note);
+            }} style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#1a5a8a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>
+              🔄 In Progress
+            </button>
+            <button onClick={()=>{
+              const note=prompt("Completion note (optional):")||"Done";
+              updateAssigned(e,"Done",note);
+            }} style={{padding:"6px 12px",borderRadius:8,border:"none",background:"#1a7a1a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>
+              ✅ Done
+            </button>
+            <button onClick={()=>setViewE(e)} style={{padding:"6px 12px",borderRadius:8,border:"1px solid #c8a060",background:"#fff8ee",color:"#8a5800",cursor:"pointer",fontSize:12}}>
+              View
+            </button>
+          </div>
+        </div>)}
+      </div>;
+    })()}
+
+    {/* ASSIGNED TASKS - Krr sees Prakash's updates */}
+    {URL_USER==="main"&&(()=>{
+      const assigned=entries.filter(e=>e.assignedTo==="prakash"&&e.prakashStatus);
+      const updated=assigned.filter(e=>!e.seenByKrr&&e.prakashUpdatedAt);
+      if(updated.length===0)return null;
+      return<div style={{background:"linear-gradient(135deg,#e8f4e8,#d8f0d8)",border:"2px solid #88c888",margin:"8px 8px 0",borderRadius:12,padding:"12px 14px"}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#1a5a1a",marginBottom:10}}>
+          📋 Prakash Updates ({updated.length})
+        </div>
+        {updated.map(e=><div key={e.id} style={{background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #c8e8c8"}}>
+          <div style={{fontWeight:700,fontSize:14}}>{e.title}</div>
+          <div style={{fontSize:12,color:"#1a5a1a",marginTop:4}}>
+            Status: <b>{e.prakashStatus}</b>
+            {e.prakashNote?" — "+e.prakashNote:""}
+          </div>
+        </div>)}
+      </div>;
+    })()}
+
     {/* TABLE */}
     <div style={{padding:"10px 8px 40px",overflowX:"auto"}}>
       {loading&&entries.length===0?<div style={{textAlign:"center",padding:"50px",color:"#b0966a"}}><div style={{fontSize:30,marginBottom:10}}>⏳</div><div>Loading from Google Sheets…</div></div>:
@@ -1356,6 +1461,8 @@ function App(){
             <h2 style={{margin:0,fontSize:18,color:"#2a1a00"}}>{viewE.title}</h2></div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
             {!viewE.tags?.includes("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
+            {URL_USER==="main"&&!viewE.assignedTo&&<button onClick={()=>assignToPrakash(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"linear-gradient(135deg,#c8860a,#a06010)",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>📋 → Prakash</button>}
+            {URL_USER==="main"&&viewE.assignedTo==="prakash"&&<div style={{padding:"6px 12px",fontSize:11,color:"#1a5a1a",fontWeight:700}}>✅ Assigned to Prakash{viewE.prakashStatus?" · "+viewE.prakashStatus:""}</div>}
             <button onClick={()=>shareEntry(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:12,fontWeight:700}}>📤 Share</button>
             <button onClick={()=>shareEntryHTML(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #5a3a8a",background:"#f5eeff",color:"#5a1a8a",cursor:"pointer",fontSize:12}}>🖼 Card</button>
             <button onClick={()=>{setEditE(viewE);setViewE(null);setShowForm(true);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:12}}>✏️</button>
