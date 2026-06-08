@@ -116,39 +116,60 @@ function isOverdue(r){return r&&new Date(r)<new Date();}
 
 function loadCache(){
   try{
-    // Check current key first
-    const current=JSON.parse(localStorage.getItem(LS_CACHE)||"[]");
-    // Also check all legacy keys and merge
-    const legacyKeys=["rk_cache_v2","rk_cache_v2_main","rk_cache","rk_entries"];
     const allEntries={};
-    // Add legacy entries first
-    legacyKeys.forEach(k=>{
+    // Check EVERY possible key we have ever used
+    const allKeys=[
+      LS_CACHE,
+      "rk_cache_v2","rk_cache_v2_main","rk_master_backup",
+      "rk_cache","rk_entries",
+      LS_CACHE+"_backup"
+    ];
+    allKeys.forEach(k=>{
       try{
-        const d=JSON.parse(localStorage.getItem(k)||"[]");
-        if(Array.isArray(d))d.forEach(e=>{if(e.id)allEntries[e.id]=e;});
+        let d=JSON.parse(localStorage.getItem(k)||"null");
+        if(!d)return;
+        // Handle both array and backup object format
+        if(d.entries)d=d.entries;
+        if(Array.isArray(d))d.forEach(e=>{if(e&&e.id&&e.title)allEntries[e.id]=e;});
       }catch(e){}
     });
-    // Current key takes priority
-    if(Array.isArray(current))current.forEach(e=>{if(e.id)allEntries[e.id]=e;});
+    // Also scan any dated backup keys
+    Object.keys(localStorage)
+      .filter(k=>k.startsWith("rk_cache")&&k.includes("_202"))
+      .forEach(k=>{
+        try{
+          let d=JSON.parse(localStorage.getItem(k)||"null");
+          if(d&&d.entries)d=d.entries;
+          if(Array.isArray(d))d.forEach(e=>{if(e&&e.id&&e.title)allEntries[e.id]=e;});
+        }catch(e){}
+      });
     const merged=Object.values(allEntries);
-    merged.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
     return merged;
   }catch{return[];}
 }
 function saveCache(e){
+  if(!e||e.length===0)return; // NEVER save empty array
   try{
-    localStorage.setItem(LS_CACHE,JSON.stringify(e));
-    // Keep rolling backup — last 3 saves
+    const payload=JSON.stringify(e);
+    // Save to multiple keys for redundancy
+    localStorage.setItem(LS_CACHE,payload);
+    localStorage.setItem("rk_cache_v2_main",payload); // Always keep a master copy
+    localStorage.setItem("rk_master_backup",payload); // Ultimate fallback
     const backup={entries:e,savedAt:new Date().toISOString(),count:e.length};
     localStorage.setItem(LS_CACHE+"_backup",JSON.stringify(backup));
-    // Also save dated backup
     const dateKey=LS_CACHE+"_"+new Date().toISOString().slice(0,10);
     localStorage.setItem(dateKey,JSON.stringify(backup));
   }catch(err){
-    console.warn("Cache full — clearing old backups");
-    // Clear old dated backups to free space
-    Object.keys(localStorage).filter(k=>k.startsWith(LS_CACHE+"_20")).forEach(k=>localStorage.removeItem(k));
-    try{localStorage.setItem(LS_CACHE,JSON.stringify(e));}catch(e2){}
+    // Storage full - clear old backups only
+    try{
+      Object.keys(localStorage)
+        .filter(k=>k.includes("_202")&&k.includes("backup"))
+        .slice(0,-2)
+        .forEach(k=>localStorage.removeItem(k));
+      localStorage.setItem(LS_CACHE,JSON.stringify(e));
+      localStorage.setItem("rk_master_backup",JSON.stringify(e));
+    }catch(e2){console.warn("Storage full");}
   }
 }
 function loadDD(){try{return JSON.parse(localStorage.getItem(LS_DD))||DEFAULT_DD;}catch{return DEFAULT_DD;}}
@@ -1025,8 +1046,11 @@ function App(){
     setSaving(true);
     const taggedEntry={...entry,loggedBy:URL_USER,loggedByName:CURRENT_USER.name,person:entry.person||(URL_USER!=="main"?CURRENT_USER.name:"")};
     setEntries(p=>{const ex=p.find(x=>x.id===taggedEntry.id);const updated=ex?p.map(x=>x.id===taggedEntry.id?taggedEntry:x):[taggedEntry,...p];saveCache(updated);return updated;});
-    const r=await sheetsAPI("save",{entry:taggedEntry});
-    setSyncStatus(r.error?"⚠️ Saved locally only":"✅ Saved to Google Sheets");
+    // Save to Sheets immediately - critical for recovery
+    sheetsAPI("save",{entry:taggedEntry}).then(r=>{
+      if(!r.error)setSyncStatus("✅ Saved · backed up to Sheets");
+      else setSyncStatus("📱 Saved locally · will sync when online");
+    }).catch(()=>setSyncStatus("📱 Saved locally · will sync when online"));
     if(entry.person&&!dropdowns.persons.includes(entry.person))addToDropdown("persons",entry.person);
     if(entry.vendor&&!dropdowns.vendors.includes(entry.vendor))addToDropdown("vendors",entry.vendor);
     if(entry.account&&!dropdowns.accounts.includes(entry.account))addToDropdown("accounts",entry.account);
@@ -1189,6 +1213,19 @@ function App(){
           <button onClick={()=>setHideDone(h=>!h)} style={{...fSel,background:hideDone?"rgba(200,255,200,.15)":"rgba(255,255,255,.08)",color:hideDone?"#90f090":"#f0cc80",border:"1.5px solid "+(hideDone?"#4a9a4a":"#c8a060"),fontSize:11,fontWeight:600}}>{hideDone?"All":"Hide✅"}</button>
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
+          {/* KRR quick buttons - always visible */}
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            {[
+              {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash"},
+              {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning"},
+            ].map(q=><button key={q.l} onClick={()=>{
+              setEditE({category:q.c,taskType:q.t,person:q.p||""});
+              setShowForm(true);
+            }} style={{padding:"6px 12px",borderRadius:8,border:"none",
+              background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",
+              color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700,
+              boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>{q.l}</button>)}
+          </div>
           {URL_USER!=="main"&&<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
             {(IS_FAMILY?[
               {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
