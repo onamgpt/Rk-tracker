@@ -71,28 +71,21 @@ function saveCache(entries){
   }catch(err){}
 }
 
+function safeStr(v){return v===null||v===undefined?"":String(v);}
+
 function sanitize(e){
   if(!e||typeof e!=="object")return null;
   return {
-    id:String(e.id||""),
-    title:String(e.title||""),
-    date:String(e.date||""),
-    category:String(e.category||""),
-    taskType:String(e.taskType||""),
-    person:String(e.person||""),
-    vendor:String(e.vendor||""),
-    account:String(e.account||""),
-    amount:String(e.amount||""),
-    paymentStatus:String(e.paymentStatus||""),
-    financialType:String(e.financialType||""),
-    notes:String(e.notes||""),
-    reminder:String(e.reminder||""),
+    id:safeStr(e.id),title:safeStr(e.title),date:safeStr(e.date),
+    category:safeStr(e.category),taskType:safeStr(e.taskType),
+    person:safeStr(e.person),vendor:safeStr(e.vendor),
+    account:safeStr(e.account),amount:safeStr(e.amount),
+    paymentStatus:safeStr(e.paymentStatus),financialType:safeStr(e.financialType),
+    notes:safeStr(e.notes),reminder:safeStr(e.reminder),
     tags:Array.isArray(e.tags)?e.tags:[],
     attachments:Array.isArray(e.attachments)?e.attachments:[],
-    createdAt:String(e.createdAt||""),
-    loggedBy:String(e.loggedBy||""),
-    loggedByName:String(e.loggedByName||""),
-    hidden:!!e.hidden
+    createdAt:safeStr(e.createdAt),loggedBy:safeStr(e.loggedBy),
+    loggedByName:safeStr(e.loggedByName),hidden:!!e.hidden
   };
 }
 
