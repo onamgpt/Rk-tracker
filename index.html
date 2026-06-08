@@ -201,7 +201,7 @@ function Modal({open,onClose,children,wide}){
 
 // ── ENTRY FORM ────────────────────────────────────────────────────────────────
 function EntryForm({initial,onSave,onClose,dropdowns}){
-  const blank={id:null,date:today(),title:"",category:initial?.category||(IS_FAMILY?"Personal - Wedding":IS_SALES?"Sales - Order":"Business - Orders"),taskType:initial?.taskType||"",person:initial?.person||"",vendor:"",account:"",amount:"",paymentStatus:"Payment Pending",tags:initial?.tags||["Pending"],notes:"",reminder:"",financialType:"",property:"",attachments:[]};
+  const blank={id:null,date:today(),title:"",category:(initial&&initial.category)||(IS_FAMILY?"Personal - Wedding":IS_SALES?"Sales - Order":"Business - Orders"),taskType:(initial&&initial.taskType)||"",person:(initial&&initial.person)||"",vendor:"",account:"",amount:"",paymentStatus:"Payment Pending",tags:(initial&&initial.tags)||["Pending"],notes:"",reminder:"",financialType:"",property:"",attachments:[]};
   const [f,setF]=useState(Object.assign({},blank,initial||{}));
   const [saving,setSaving]=useState(false);
   const [scanning,setScanning]=useState(false);
