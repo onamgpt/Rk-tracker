@@ -45,6 +45,11 @@ const SHARED_USERS=["main","prakash","maadhu","virupaksha","gopal","satish","seb
 const IS_SHARED=SHARED_USERS.includes(URL_USER.toLowerCase());
 const LS_CACHE="rk_cache_v2_"+URL_USER;
 const LS_DD="rk_dropdowns_v2_"+URL_USER;
+// User types
+const FAMILY_USERS=["wife","daughter"];
+const IS_FAMILY=FAMILY_USERS.includes(URL_USER.toLowerCase());
+const IS_SALES=["satish","sebi","sugeesh","sunil","biju","sadasivan","sooraj","murugan"].includes(URL_USER.toLowerCase());
+
 const USER_CONFIG={
   main:{name:"Krr",color:"#2a1800",bg:"#f5d890",admin:true},
   prakash:{name:"Prakash",color:"#0a3a6a",bg:"#c8e8ff",admin:false},
@@ -81,7 +86,7 @@ const DEFAULT_DD={
   properties:["Greenbay","846","846 1st Floor","N104","Bommasandra","BDA","Coonoor trip"],
   paymentStatuses:["Payment Pending","Asked Payment","Partial Payment","Paid","Overdue"],
   chemicals:["Sandal","Rose","Jasmine","Mogra","Vetiver / Khus","Lavender","Patchouli","Cedarwood","Frankincense","Myrrh","Camphor","Benzyl Benzoate","DOP","DEP","Galaxolide","Iso E Super","Hedione","Coumarin","Musk Ketone","Eugenol","Linalool","Geraniol","Vanillin","Jigat / Binder","Charcoal Powder","Wood Powder","Bamboo Sticks","Masala Mix","Jasmine ASP"],
-  categories:["Business - Orders","Business - Dispatch","Business - Production","Business - Purchase","Finance - Bank","Finance - Loans","Finance - Investments","Finance - Expenses","People","Property","Compliance - Tax","Compliance - ESI/EPF/PT","Personal","Reminders","Digital / Marketing","CSD Tasks","Misc","Sales - Order","Sales - Payment","Sales - Visit","Sales - Expense","Sales - Complaint","Sales - Feedback","Intelligence - Competitor","Intelligence - Market","Intelligence - New Brand","Intelligence - Pricing","Problem - Factory","Problem - Delivery","Problem - Quality","Problem - Customer","Problem - Staff"]
+  categories:["Business - Orders","Business - Dispatch","Business - Production","Business - Purchase","Finance - Bank","Finance - Loans","Finance - Investments","Finance - Expenses","People","Property","Compliance - Tax","Compliance - ESI/EPF/PT","Personal","Reminders","Digital / Marketing","CSD Tasks","Misc","Sales - Order","Sales - Payment","Sales - Visit","Sales - Expense","Sales - Complaint","Sales - Feedback","Intelligence - Competitor","Intelligence - Market","Intelligence - New Brand","Intelligence - Pricing","Problem - Factory","Problem - Delivery","Problem - Quality","Problem - Customer","Problem - Staff","Personal - Wedding","Personal - Expense","Personal - Thoughts","Personal - Shopping","Personal - Health","Personal - Travel","Reminders"]
 };
 
 const STATUS_TAGS=["Pending","In Progress","Done","Urgent","Super Pending","Waiting","Follow-up","Payment Due","Paid","Overdue","Review","GOVT","Recurring","AI Flagged"];
@@ -612,7 +617,7 @@ function DropdownManager({dropdowns,onSave,onClose}){
 }
 
 // ── ENTRY FORM ────────────────────────────────────────────────────────────────
-const EMPTY_E={id:null,date:"",title:"",category:"Business - Orders",taskType:"",person:"",account:"",vendor:"",property:"",financialType:"",paymentStatus:"",month:"",chemical:"",tags:[],notes:"",reminder:"",reminderNote:"",amount:"",attachments:[],link:"",linkLabel:"",isRecurring:false,createdAt:""};
+const EMPTY_E={id:null,date:"",title:"",category:IS_FAMILY?"Personal":IS_SALES?"Sales - Order":"Business - Orders",taskType:"",person:"",account:"",vendor:"",property:"",financialType:"",paymentStatus:"",month:"",chemical:"",tags:[],notes:"",reminder:"",reminderNote:"",amount:"",attachments:[],link:"",linkLabel:"",isRecurring:false,createdAt:""};
 
 function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
   const [f,setF]=useState({...EMPTY_E,date:today(),id:genId(),createdAt:new Date().toISOString(),...initial});
@@ -630,9 +635,25 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
 
   return<div>
     <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{initial?.id?"✏️ Edit":"✨ New Entry"}</h2>
-    {URL_USER!=="main"&&!initial?.id&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14,padding:"10px 12px",background:"#f0f8ff",border:"1.5px solid #b0d8f0",borderRadius:10}}>
-      <div style={{width:"100%",fontSize:11,fontWeight:700,color:"#005a8a",marginBottom:4}}>⚡ Quick — tap to pre-fill:</div>
-      {[{l:"📦 Order",c:"Sales - Order",t:"Orders Received"},{l:"💰 Payment",c:"Sales - Payment",t:"Payment Collected"},{l:"🚶 Visit",c:"Sales - Visit",t:"Customer Visit"},{l:"🧾 Expense",c:"Sales - Expense",t:"Expense - Travel"},{l:"😟 Complaint",c:"Sales - Complaint",t:"Complaint Received"},{l:"🏷 Competitor",c:"Intelligence - Competitor",t:"Competitor Spotted"},{l:"💡 Idea",c:"Intelligence - New Brand",t:"New Product Idea"},{l:"⚠️ Problem",c:"Problem - Customer",t:"Pending Tasks"}].map(q=><button key={q.l} type="button" onClick={()=>{set("category",q.c);set("taskType",q.t);}} style={{padding:"6px 12px",borderRadius:8,border:"none",background:q.c.includes("Sales")?"#1a5a8a":q.c.includes("Intel")?"#5a1a8a":"#8a3a00",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>{q.l}</button>)}
+    {URL_USER!=="main"&&!initial?.id&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14,padding:"10px 12px",background:IS_FAMILY?"#fff0f8":"#f0f8ff",border:"1.5px solid "+(IS_FAMILY?"#f0b0d0":"#b0d8f0"),borderRadius:10}}>
+      <div style={{width:"100%",fontSize:11,fontWeight:700,color:IS_FAMILY?"#8a005a":"#005a8a",marginBottom:6}}>⚡ Quick entry:</div>
+      {(IS_FAMILY?[
+        {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning",bg:"#c8006a"},
+        {l:"💰 Expense",c:"Personal - Expense",t:"Expense",bg:"#6a1a8a"},
+        {l:"💭 Thoughts",c:"Personal - Thoughts",t:"Thoughts & Ideas",bg:"#1a6a8a"},
+        {l:"⏰ Reminder",c:"Reminders",t:"Reminder / Task",bg:"#6a4a00"},
+        {l:"🛍 Shopping",c:"Personal - Shopping",t:"Shopping",bg:"#006a4a"},
+        {l:"📝 Notes",c:"Personal",t:"Notes",bg:"#4a4a4a"},
+      ]:[
+        {l:"📦 Order",c:"Sales - Order",t:"Orders Received",bg:"#1a5a8a"},
+        {l:"💰 Payment",c:"Sales - Payment",t:"Payment Collected",bg:"#1a6a2a"},
+        {l:"🚶 Visit",c:"Sales - Visit",t:"Customer Visit",bg:"#5a3a8a"},
+        {l:"🧾 Expense",c:"Sales - Expense",t:"Expense - Travel",bg:"#8a5a00"},
+        {l:"😟 Complaint",c:"Sales - Complaint",t:"Complaint Received",bg:"#8a1a1a"},
+        {l:"🏷 Competitor",c:"Intelligence - Competitor",t:"Competitor Spotted",bg:"#3a3a8a"},
+        {l:"💡 Idea",c:"Intelligence - New Brand",t:"New Product Idea",bg:"#6a4a00"},
+        {l:"⚠️ Problem",c:"Problem - Customer",t:"Pending Tasks",bg:"#7a3a00"},
+      ]).map(q=><button key={q.l} type="button" onClick={()=>{set("category",q.c);set("taskType",q.t);}} style={{padding:"7px 13px",borderRadius:8,border:"none",background:q.bg,color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>{q.l}</button>)}
     </div>}
 
     {/* VOICE INPUT */}
@@ -656,7 +677,14 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
       <div>
         <label className="lbl">Category</label>
         <div style={{display:"flex",gap:6}}>
-          <select className="inp" value={f.category} onChange={e=>set("category",e.target.value)} style={{flex:1}}>{dropdowns.categories.map(c=><option key={c}>{c}</option>)}</select>
+          <select className="inp" value={f.category} onChange={e=>set("category",e.target.value)} style={{flex:1}}>
+            {(IS_FAMILY?
+              dropdowns.categories.filter(c=>c.startsWith("Personal")||c.startsWith("Reminder")||c==="Misc"):
+              IS_SALES?
+              dropdowns.categories.filter(c=>c.startsWith("Sales")||c.startsWith("Intel")||c.startsWith("Problem")||c==="Misc"||c==="Personal"):
+              dropdowns.categories
+            ).map(c=><option key={c}>{c}</option>)}
+          </select>
           <button type="button" onClick={()=>{const v=prompt("New category name:");if(v&&v.trim()){addNew("categories",v.trim());set("category",v.trim());}}} style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:14,fontWeight:700,flexShrink:0}}>＋</button>
         </div>
       </div>
@@ -1118,7 +1146,21 @@ function App(){
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
           {URL_USER!=="main"&&<div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {[{l:"📦",c:"Sales - Order",t:"Orders Received"},{l:"💰",c:"Sales - Payment",t:"Payment Collected"},{l:"🚶",c:"Sales - Visit",t:"Customer Visit"},{l:"🧾",c:"Sales - Expense",t:"Expense - Travel"},{l:"😟",c:"Sales - Complaint",t:"Complaint Received"},{l:"🏷",c:"Intelligence - Competitor",t:"Competitor Spotted"}].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t});setShowForm(true);}} style={{padding:"7px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,.15)",color:"#f5d890",cursor:"pointer",fontSize:16}}>{q.l}</button>)}
+            {(IS_FAMILY?[
+              {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
+              {l:"💰",c:"Personal - Expense",t:"Expense"},
+              {l:"💭",c:"Personal - Thoughts",t:"Thoughts & Ideas"},
+              {l:"⏰",c:"Reminders",t:"Reminder / Task"},
+              {l:"🛍",c:"Personal - Shopping",t:"Shopping"},
+              {l:"📝",c:"Personal",t:"Notes"},
+            ]:[
+              {l:"📦",c:"Sales - Order",t:"Orders Received"},
+              {l:"💰",c:"Sales - Payment",t:"Payment Collected"},
+              {l:"🚶",c:"Sales - Visit",t:"Customer Visit"},
+              {l:"🧾",c:"Sales - Expense",t:"Expense - Travel"},
+              {l:"😟",c:"Sales - Complaint",t:"Complaint Received"},
+              {l:"🏷",c:"Intelligence - Competitor",t:"Competitor Spotted"},
+            ]).map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t});setShowForm(true);}} style={{padding:"7px 10px",borderRadius:8,border:"none",background:"rgba(255,255,255,.15)",color:"#f5d890",cursor:"pointer",fontSize:16}}>{q.l}</button>)}
           </div>}
           <button onClick={()=>{setEditE(null);setShowForm(true);}} style={{padding:"7px 14px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#e8a020,#c07010)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,boxShadow:"0 4px 14px rgba(200,120,0,.35)"}}>+ New</button>
         </div>
