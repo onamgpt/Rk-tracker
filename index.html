@@ -48,7 +48,6 @@ const IS_SALES=SALES_USERS.includes(URL_USER);
 const IS_SHARED=["main","prakash","maadhu","virupaksha","gopal",...SALES_USERS].includes(URL_USER);
 const LS_CACHE="rk_cache_v2_"+URL_USER;
 const LS_DD="rk_dropdowns_v2_"+URL_USER;
-const UCFG=null; // alias below
 const USER_CONFIG={
   main:{name:"Krr",color:"#2a1800",bg:"#f5d890",admin:true},
   prakash:{name:"Prakash",color:"#0a3a6a",bg:"#c8e8ff",admin:false},
@@ -67,6 +66,7 @@ const USER_CONFIG={
   daughter:{name:"Daughter",color:"#1a4a6a",bg:"#c8e0ff",admin:false},
 };
 const CU=USER_CONFIG[URL_USER]||{name:URL_USER,col:"#2a1800",bg:"#f5d890",admin:false};
+const UCFG=USER_CONFIG;
 const CURRENT_USER=USER_CONFIG[URL_USER]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
 const URL_PARAMS=new URLSearchParams(window.location.search);
