@@ -1030,7 +1030,7 @@ function App(){
   };
 
   const addToDropdown=(list,val)=>{
-    setDropdowns(p=>{if(p[list]?.includes(val))return p;const u={...p,[list]:[...p[list],val]};sheetsAPI("saveDropdowns",{dropdowns:u}).catch(()=>{});return u;});
+    setDropdowns(p=>{if((p[list]&&p[list].includes(val)))return p;const u={...p,[list]:[...p[list],val]};sheetsAPI("saveDropdowns",{dropdowns:u}).catch(()=>{});return u;});
   };
 
   const saveDropdowns=async(dd)=>{
