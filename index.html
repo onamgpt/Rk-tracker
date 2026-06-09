@@ -48,6 +48,7 @@ const IS_SALES=SALES_USERS.includes(URL_USER);
 const IS_SHARED=["main","prakash","maadhu","virupaksha","gopal",...SALES_USERS].includes(URL_USER);
 const LS_CACHE="rk_cache_v2_"+URL_USER;
 const LS_DD="rk_dropdowns_v2_"+URL_USER;
+const UCFG=null; // alias below
 const USER_CONFIG={
   main:{name:"Krr",color:"#2a1800",bg:"#f5d890",admin:true},
   prakash:{name:"Prakash",color:"#0a3a6a",bg:"#c8e8ff",admin:false},
@@ -65,6 +66,7 @@ const USER_CONFIG={
   wife:{name:"Wife",color:"#6a1a4a",bg:"#f8c8e8",admin:false},
   daughter:{name:"Daughter",color:"#1a4a6a",bg:"#c8e0ff",admin:false},
 };
+const CU=USER_CONFIG[URL_USER]||{name:URL_USER,col:"#2a1800",bg:"#f5d890",admin:false};
 const CURRENT_USER=USER_CONFIG[URL_USER]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
 const URL_PARAMS=new URLSearchParams(window.location.search);
@@ -893,6 +895,37 @@ function exportPDF(entries,label){
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
+function shareEntryCard(e){
+  var atts=e.attachments||[];
+  var imgs=atts.filter(function(a){return a.type&&a.type.indexOf("image")===0;});
+  var docs=atts.filter(function(a){return!a.type||a.type.indexOf("image")!==0;});
+  var imgHtml=imgs.map(function(a){return "<img src='"+a.data+"' style='max-width:100%;border-radius:8px;margin:6px 0;display:block'/>";}).join("");
+  var docHtml=docs.map(function(a){return "<a href='"+a.data+"' target='_blank' download='"+(a.name||"file")+"' style='display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none'>📄 "+(a.name||"Download")+"</a>";}).join("");
+  var title=String(e.title||"");
+  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>"+title+"</title>"+
+    "<style>body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto}"+
+    ".card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12)}"+
+    ".hdr{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px}"+
+    ".fld{font-size:13px;margin-bottom:8px;color:#2a1800}"+
+    ".notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;line-height:1.6}"+
+    ".btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px}</style></head><body>"+
+    "<div class='card'><div class='hdr'><div style='font-size:18px;font-weight:700'>"+title+"</div>"+
+    "<div style='font-size:11px;color:#c8a860;margin-top:4px'>"+fmtDate(e.date)+(e.category?" · "+String(e.category):"")+"</div></div>"+
+    (e.taskType?"<div class='fld'>📌 "+String(e.taskType)+"</div>":"")+
+    (e.person?"<div class='fld'>👤 "+String(e.person)+"</div>":"")+
+    (e.vendor?"<div class='fld'>🏭 "+String(e.vendor)+"</div>":"")+
+    (e.amount?"<div class='fld' style='font-size:18px;font-weight:700;color:#1a5a00'>"+String(e.amount)+"</div>":"")+
+    (e.paymentStatus?"<div class='fld'>💳 "+String(e.paymentStatus)+"</div>":"")+
+    (e.notes?"<div class='notes'>📝 "+String(e.notes)+"</div>":"")+
+    (imgHtml?"<div style='margin-top:12px'>"+imgHtml+"</div>":"")+
+    (docHtml?"<div style='margin-top:8px'>"+docHtml+"</div>":"")+
+    "<div style='text-align:center;font-size:11px;color:#9a8060;margin-top:12px'>🌿 Onam Agarbathi Pvt. Ltd.</div>"+
+    "<button class='btn' onclick='if(navigator.share){navigator.share({title:""+title+"",text:document.body.innerText});}else{window.print();}'>📤 Share / Save as PDF</button>"+
+    "</div></body></html>";
+  var w=window.open("","_blank");
+  if(w){w.document.write(html);w.document.close();}
+}
+
 function App(){
   if(IS_VIEW_MODE) return<ShareableView/>;
 
@@ -1154,9 +1187,10 @@ function App(){
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
           {URL_USER==="main"&&[
-            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash"},
-            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning"},
-          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||""});setShowForm(true);}} style={{padding:"6px 12px",borderRadius:8,border:"none",background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{q.l}</button>)}
+            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash",bg:"#1a5a8a"},
+            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning",bg:"#c8006a"},
+            {l:"⚠️ Pending",c:"Business - Orders",t:"Pending Tasks",bg:"#c00",tags:["Pending","Super Pending"]},
+          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||"",tags:q.tags||["Pending"]});setShowForm(true);}} style={{padding:"6px 12px",background:q.bg||"#1a5a8a",color:"#fff",border:"none",borderRadius:8,border:"none",background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{q.l}</button>)}
           {IS_FAMILY&&[
             {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
             {l:"💰",c:"Personal - Expense",t:"Expense"},
