@@ -931,14 +931,27 @@ function App(){
     if(cached.length>0){
       sheetsAPI("getAll").then(r=>{
         if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");return;}
-        const ids=new Set(r.entries.map(e=>e.id));
-        const missing=cached.filter(e=>!ids.has(e.id));
-        if(missing.length>0){
-          missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
-          setSyncStatus("✅ "+cached.length+" entries · "+missing.length+" backed up");
-        } else {
-          setSyncStatus("✅ "+cached.length+" entries · all in Sheets");
-        }
+        // Merge Sheets + local — Sheets wins for new devices, local wins for conflicts
+        const sm={};
+        r.entries.forEach(e=>{
+          if(e&&e.id){
+            const safe={};
+            Object.keys(e).forEach(k=>{
+              if(k==="tags")safe.tags=Array.isArray(e[k])?e[k]:[];
+              else if(k==="attachments")safe.attachments=Array.isArray(e[k])?e[k]:[];
+              else if(k==="hidden")safe.hidden=!!e[k];
+              else safe[k]=(e[k]===null||e[k]===undefined)?"":String(e[k]);
+            });
+            if(!safe.tags)safe.tags=[];
+            if(!safe.attachments)safe.attachments=[];
+            sm[safe.id]=safe;
+          }
+        });
+        const lm={};cached.forEach(e=>{if(e&&e.id)lm[e.id]=e;});
+        const merged=Object.values(Object.assign({},sm,lm));
+        merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
+        setEntries(merged);saveCache(merged);
+        setSyncStatus("✅ "+merged.length+" entries · synced");
       }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
     }
     sheetsAPI("getDropdowns").then(r=>{if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));}).catch(()=>{});
