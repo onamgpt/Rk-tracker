@@ -33,7 +33,6 @@ input,select,textarea,button{font-family:inherit;}
 <body>
 <div id="root"></div>
 <script type="text/babel">
-var safeStr=function(v){return(v===null||v===undefined)?"":String(v);};
 const {useState,useEffect,useRef,useMemo,useCallback}=React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -65,8 +64,6 @@ const USER_CONFIG={
   wife:{name:"Wife",color:"#6a1a4a",bg:"#f8c8e8",admin:false},
   daughter:{name:"Daughter",color:"#1a4a6a",bg:"#c8e0ff",admin:false},
 };
-const CU=USER_CONFIG[URL_USER]||{name:URL_USER,col:"#2a1800",bg:"#f5d890",admin:false};
-const UCFG=USER_CONFIG;
 const CURRENT_USER=USER_CONFIG[URL_USER]||{name:URL_USER,color:"#2a1800",bg:"#f5d890",admin:false};
 const IS_ENTRY_MODE=new URLSearchParams(window.location.search).has("entry");
 const URL_PARAMS=new URLSearchParams(window.location.search);
@@ -341,7 +338,7 @@ function Thumb({att,small}){
       if(w){w.document.write(`<img src="${att.data}" style="max-width:100%" />`);w.document.close();}
     }
   };
-  if(att.(type&&type.startsWith)("image/"))return<div onClick={openAtt} style={{...b,overflow:"hidden",cursor:"zoom-in"}}><img src={att.data} alt={att.name||"image"} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
+  if(att.type?.startsWith("image/"))return<div onClick={openAtt} style={{...b,overflow:"hidden",cursor:"zoom-in"}}><img src={att.data} alt={att.name||"image"} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
   const p=att.type==="application/pdf";
   return<div onClick={openAtt} style={{...b,background:p?"#fff0f0":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:small?9:11,color:p?"#b00":"#339",fontWeight:700,flexDirection:"column",gap:1}}>
     <span style={{fontSize:small?14:18}}>{p?"📄":"📎"}</span>
@@ -573,7 +570,7 @@ function AIPanel({entries,onClose}){
     </div>
     <div style={{display:"flex",gap:8,marginBottom:12}}>
       <textarea className="inp" value={q} rows={2} placeholder="Ask anything about your data…" onChange={e=>setQ(e.target.value)} style={{resize:"none"}}/>
-      <button onClick={()=>ask()} disabled={loading} className="ai-btn" style={{alignSelf:"stretch",whiteSpace:"nowrap",opacity:(loading&&loading.6):1}}>{loading?"…":"Ask"}</button>
+      <button onClick={()=>ask()} disabled={loading} className="ai-btn" style={{alignSelf:"stretch",whiteSpace:"nowrap",opacity:loading?.6:1}}>{loading?"…":"Ask"}</button>
     </div>
     {loading&&<div style={{textAlign:"center",padding:"20px",color:"#7a5aaa",fontSize:13}}>🧠 Analysing {entries.length} entries…</div>}
     {result&&<div style={{background:"linear-gradient(135deg,#f8f0ff,#f0e8ff)",border:"1.5px solid #c8a8e8",borderRadius:10,padding:"14px",fontSize:13,color:"#2a0050",whiteSpace:"pre-wrap",lineHeight:1.7}}>{result}</div>}
@@ -629,7 +626,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
   const G2={display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12};
 
   return<div>
-    <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{(initial&&initial.id)?"✏️ Edit":"✨ New Entry"}</h2>
+    <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{initial?.id?"✏️ Edit":"✨ New Entry"}</h2>
 
     {/* VOICE INPUT */}
     <VoiceInput onResult={applyVoiceData} dropdowns={dropdowns}/>
@@ -706,7 +703,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
     </div>
     <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
       <button className="bgh" onClick={onClose}>Cancel</button>
-      <button className="bg" disabled={saving} onClick={()=>{if(!f.title.trim()){alert("Please add a title.");return;}if(!f.date){alert("Please set a date.");return;}onSave(f);}} style={{opacity:(saving&&saving.7):1}}>
+      <button className="bg" disabled={saving} onClick={()=>{if(!f.title.trim()){alert("Please add a title.");return;}if(!f.date){alert("Please set a date.");return;}onSave(f);}} style={{opacity:saving?.7:1}}>
         {saving?"Saving…":"Save Entry"}
       </button>
     </div>
@@ -720,12 +717,12 @@ function ShareableView(){
   const filtered=entries.filter(e=>{
     if(VIEW_PERSON&&(e.person||"").toLowerCase()!==VIEW_PERSON.toLowerCase())return false;
     if(VIEW_ACCOUNT&&(e.account||"").toLowerCase()!==VIEW_ACCOUNT.toLowerCase())return false;
-    if(VIEW_TAG&&!e.(tags&&tags.map)(t=>t.toLowerCase()).includes(VIEW_TAG.toLowerCase()))return false;
+    if(VIEW_TAG&&!e.tags?.map(t=>t.toLowerCase()).includes(VIEW_TAG.toLowerCase()))return false;
     if(VIEW_CATEGORY&&(e.category||"").toLowerCase()!==VIEW_CATEGORY.toLowerCase())return false;
     return true;
   }).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const pending=filtered.filter(e=>!e.(tags&&tags.includes)("Done"));
-  const done=filtered.filter(e=>e.(tags&&tags.includes)("Done"));
+  const pending=filtered.filter(e=>!e.tags?.includes("Done"));
+  const done=filtered.filter(e=>e.tags?.includes("Done"));
 
   return<div style={{minHeight:"100vh",background:"linear-gradient(160deg,#fdf8ef,#f8f2e4)",fontFamily:"'Palatino Linotype',serif"}}>
     <div style={{background:"linear-gradient(135deg,#2a1800,#5a3800)",padding:"16px 18px"}}>
@@ -738,9 +735,9 @@ function ShareableView(){
         <div>
           {pending.length>0&&<div style={{marginBottom:20}}>
             <div style={{fontSize:12,fontWeight:700,color:"#8B0000",marginBottom:10}}><span style={{background:"#8B0000",color:"#fff",borderRadius:20,padding:"2px 10px"}}>⏳ Pending — {pending.length}</span></div>
-            {pending.map((e,i)=><div key={e.id} style={{background:e.(tags&&tags.includes)("Super Pending")?"#fff0f0":"#fffdf7",border:`1.5px solid ${e.(tags&&tags.includes)("Super Pending")?"#f5c6cb":"#e8dcc8"}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
+            {pending.map((e,i)=><div key={e.id} style={{background:e.tags?.includes("Super Pending")?"#fff0f0":"#fffdf7",border:`1.5px solid ${e.tags?.includes("Super Pending")?"#f5c6cb":"#e8dcc8"}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
               <div style={{fontWeight:700,fontSize:14,color:"#2a1600",marginBottom:4}}>{e.title}</div>
-              {e.(tags&&tags.length)>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>{e.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
+              {e.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>{e.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
               <div style={{display:"flex",flexWrap:"wrap",gap:6,fontSize:12}}>
                 {e.amount&&<span style={{color:"#1a5a00",fontWeight:700}}>{e.amount}</span>}
                 {e.taskType&&<span style={{color:"#5a3800"}}>{e.taskType}</span>}
@@ -796,7 +793,7 @@ function shareEntry(entry){
   if(entry.paymentStatus) lines.push("💳 "+entry.paymentStatus);
   if(entry.property) lines.push("🏠 "+entry.property);
   if(entry.chemical) lines.push("🧪 "+entry.chemical);
-  if(entry.(tags&&tags.length)) lines.push("🏷 "+entry.tags.join(", "));
+  if(entry.tags?.length) lines.push("🏷 "+entry.tags.join(", "));
   if(entry.notes)    lines.push("\n📝 "+entry.notes);
   if(entry.reminder) lines.push("⏰ "+fmtDT(entry.reminder)+(entry.reminderNote?" — "+entry.reminderNote:""));
   if(entry.link)     lines.push("🔗 "+(entry.linkLabel||entry.link)+": "+entry.link);
@@ -824,8 +821,8 @@ function shareEntry(entry){
 function shareEntryHTML(entry){
   const w=window.open("","_blank");
   const atts=(entry.attachments||[]);
-  const imgs=atts.filter(a=>a.(type&&type.startsWith)("image/"));
-  const docs=atts.filter(a=>!a.(type&&type.startsWith)("image/"));
+  const imgs=atts.filter(a=>a.type?.startsWith("image/"));
+  const docs=atts.filter(a=>!a.type?.startsWith("image/"));
 
   const imgHtml=imgs.map(a=>`<img src="${a.data}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8" onclick="window.open(this.src)" />`).join("");
   const docHtml=docs.map(a=>`<a href="${a.data}" target="_blank" download="${a.name||"file"}" style="display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0">📄 ${a.name||"Download File"}</a>`).join("");
@@ -872,7 +869,7 @@ function exportCSV(entries){
 }
 
 function exportPDF(entries,label){
-  const isDone=e=>e.(tags&&tags.includes)("Done");
+  const isDone=e=>e.tags?.includes("Done");
   const pending=entries.filter(e=>!isDone(e));
   const done=entries.filter(e=>isDone(e));
   const rows=(list,title)=>{
@@ -895,37 +892,6 @@ function exportPDF(entries,label){
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
-function shareEntryCard(e){
-  var atts=e.attachments||[];
-  var imgs=atts.filter(function(a){return a.type&&a.type.indexOf("image")===0;});
-  var docs=atts.filter(function(a){return!a.type||a.type.indexOf("image")!==0;});
-  var imgHtml=imgs.map(function(a){return "<img src='"+a.data+"' style='max-width:100%;border-radius:8px;margin:6px 0;display:block'/>";}).join("");
-  var docHtml=docs.map(function(a){return "<a href='"+a.data+"' target='_blank' download='"+(a.name||"file")+"' style='display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none'>📄 "+(a.name||"Download")+"</a>";}).join("");
-  var title=String(e.title||"");
-  var html="<!DOCTYPE html><html><head><meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1'/><title>"+title+"</title>"+
-    "<style>body{font-family:Georgia,serif;background:#fdf8ef;padding:16px;max-width:500px;margin:0 auto}"+
-    ".card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 24px rgba(0,0,0,.12)}"+
-    ".hdr{background:linear-gradient(135deg,#2a1800,#5a3800);color:#f5d890;padding:14px 16px;border-radius:10px;margin-bottom:14px}"+
-    ".fld{font-size:13px;margin-bottom:8px;color:#2a1800}"+
-    ".notes{background:#fffdf5;border:1px solid #e8dcc8;border-radius:8px;padding:10px;font-size:13px;margin-top:10px;line-height:1.6}"+
-    ".btn{display:block;width:100%;padding:12px;background:#2a1800;color:#f5d890;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px}</style></head><body>"+
-    "<div class='card'><div class='hdr'><div style='font-size:18px;font-weight:700'>"+title+"</div>"+
-    "<div style='font-size:11px;color:#c8a860;margin-top:4px'>"+fmtDate(e.date)+(e.category?" · "+String(e.category):"")+"</div></div>"+
-    (e.taskType?"<div class='fld'>📌 "+String(e.taskType)+"</div>":"")+
-    (e.person?"<div class='fld'>👤 "+String(e.person)+"</div>":"")+
-    (e.vendor?"<div class='fld'>🏭 "+String(e.vendor)+"</div>":"")+
-    (e.amount?"<div class='fld' style='font-size:18px;font-weight:700;color:#1a5a00'>"+String(e.amount)+"</div>":"")+
-    (e.paymentStatus?"<div class='fld'>💳 "+String(e.paymentStatus)+"</div>":"")+
-    (e.notes?"<div class='notes'>📝 "+String(e.notes)+"</div>":"")+
-    (imgHtml?"<div style='margin-top:12px'>"+imgHtml+"</div>":"")+
-    (docHtml?"<div style='margin-top:8px'>"+docHtml+"</div>":"")+
-    "<div style='text-align:center;font-size:11px;color:#9a8060;margin-top:12px'>🌿 Onam Agarbathi Pvt. Ltd.</div>"+
-    "<button class='btn' onclick='if(navigator.share){navigator.share({title:""+title+"",text:document.body.innerText});}else{window.print();}'>📤 Share / Save as PDF</button>"+
-    "</div></body></html>";
-  var w=window.open("","_blank");
-  if(w){w.document.write(html);w.document.close();}
-}
-
 function App(){
   if(IS_VIEW_MODE) return<ShareableView/>;
 
@@ -964,27 +930,14 @@ function App(){
     if(cached.length>0){
       sheetsAPI("getAll").then(r=>{
         if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");return;}
-        // Merge Sheets + local — Sheets wins for new devices, local wins for conflicts
-        const sm={};
-        r.entries.forEach(e=>{
-          if(e&&e.id){
-            const safe={};
-            Object.keys(e).forEach(k=>{
-              if(k==="tags")safe.tags=Array.isArray(e[k])?e[k]:[];
-              else if(k==="attachments")safe.attachments=Array.isArray(e[k])?e[k]:[];
-              else if(k==="hidden")safe.hidden=!!e[k];
-              else safe[k]=(e[k]===null||e[k]===undefined)?"":String(e[k]);
-            });
-            if(!safe.tags)safe.tags=[];
-            if(!safe.attachments)safe.attachments=[];
-            sm[safe.id]=safe;
-          }
-        });
-        const lm={};cached.forEach(e=>{if(e&&e.id)lm[e.id]=e;});
-        const merged=Object.values(Object.assign({},sm,lm));
-        merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
-        setEntries(merged);saveCache(merged);
-        setSyncStatus("✅ "+merged.length+" entries · synced");
+        const ids=new Set(r.entries.map(e=>e.id));
+        const missing=cached.filter(e=>!ids.has(e.id));
+        if(missing.length>0){
+          missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
+          setSyncStatus("✅ "+cached.length+" entries · "+missing.length+" backed up");
+        } else {
+          setSyncStatus("✅ "+cached.length+" entries · all in Sheets");
+        }
       }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
     }
     sheetsAPI("getDropdowns").then(r=>{if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));}).catch(()=>{});
@@ -1030,7 +983,7 @@ function App(){
   };
 
   const addToDropdown=(list,val)=>{
-    setDropdowns(p=>{if((p[list]&&p[list].includes(val)))return p;const u={...p,[list]:[...p[list],val]};sheetsAPI("saveDropdowns",{dropdowns:u}).catch(()=>{});return u;});
+    setDropdowns(p=>{if(p[list]?.includes(val))return p;const u={...p,[list]:[...p[list],val]};sheetsAPI("saveDropdowns",{dropdowns:u}).catch(()=>{});return u;});
   };
 
   const saveDropdowns=async(dd)=>{
@@ -1039,37 +992,25 @@ function App(){
   };
 
   const refresh=async()=>{
-    setLoading(true);setSyncStatus("🔄 Syncing...");
+    // Manual sync — push local to sheets, never overwrite local
+    setLoading(true);setSyncStatus("📤 Syncing to Google Sheets...");
     const cached=loadCache();
+    if(cached.length===0){setSyncStatus("📱 No entries to sync");setLoading(false);return;}
     try{
       const r=await sheetsAPI("getAll");
-      if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");setLoading(false);return;}
-      // Always merge: Sheets + local → local takes priority
-      const sm={};
-      (r.entries||[]).forEach(e=>{
-        if(e&&e.id){
-          const s={tags:[],attachments:[],hidden:false};
-          Object.keys(e).forEach(k=>{
-            if(k==="tags")s.tags=Array.isArray(e[k])?e[k]:[];
-            else if(k==="attachments")s.attachments=Array.isArray(e[k])?e[k]:[];
-            else if(k==="hidden")s.hidden=!!e[k];
-            else s[k]=(e[k]===null||e[k]===undefined)?"":String(e[k]);
-          });
-          sm[s.id]=s;
-        }
-      });
-      const lm={};cached.forEach(e=>{if(e&&e.id)lm[e.id]=e;});
-      const merged=Object.values(Object.assign({},sm,lm));
-      merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
-      setEntries(merged);saveCache(merged);
-      // Push any local-only entries to Sheets
-      const sheetIds=new Set(Object.keys(sm));
+      const sheetIds=new Set((r.entries||[]).map(e=>e.id));
       const toSync=cached.filter(e=>!sheetIds.has(e.id));
-      if(toSync.length>0)await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
-      setSyncStatus("✅ "+merged.length+" entries · synced "+new Date().toLocaleTimeString("en-IN"));
-    }catch(ex){setSyncStatus("📴 Sync failed: "+String(ex.message||ex));}
+      if(toSync.length>0){
+        await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
+        setSyncStatus("✅ "+cached.length+" entries · "+toSync.length+" new backed up · "+new Date().toLocaleTimeString("en-IN"));
+      } else {
+        setSyncStatus("✅ All "+cached.length+" entries backed up · "+new Date().toLocaleTimeString("en-IN"));
+      }
+    }catch(e){
+      setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");
+    }
     setLoading(false);
-  };;
+  };
 
   const allPersons=[...new Set([...dropdowns.persons,...entries.map(e=>e.person).filter(Boolean)])];
   const allAccounts=[...new Set([...dropdowns.accounts,...entries.map(e=>e.account).filter(Boolean)])];
@@ -1077,9 +1018,9 @@ function App(){
 
   const filtered=useMemo(()=>entries.filter(e=>{
     if(e.hidden&&!showHidden)return false;
-    if(hideDone&&e.(tags&&tags.includes)("Done"))return false;
+    if(hideDone&&e.tags?.includes("Done"))return false;
     if(filterCat!=="All"&&e.category!==filterCat)return false;
-    if(filterTag&&!e.(tags&&tags.includes)(filterTag))return false;
+    if(filterTag&&!e.tags?.includes(filterTag))return false;
     if(filterPerson&&e.person!==filterPerson)return false;
     if(filterAccount&&e.account!==filterAccount)return false;
     if(filterVendor&&e.vendor!==filterVendor)return false;
@@ -1092,8 +1033,8 @@ function App(){
     return(a.title||"").localeCompare(b.title||"");
   }),[entries,hideDone,filterCat,filterTag,filterPerson,filterAccount,filterVendor,filterStatus,search,sort]);
 
-  const overdueN=entries.filter(e=>isOverdue(e.reminder)&&!e.(tags&&tags.includes)("Done")).length;
-  const superN=entries.filter(e=>e.(tags&&tags.includes)("Super Pending")).length;
+  const overdueN=entries.filter(e=>isOverdue(e.reminder)&&!e.tags?.includes("Done")).length;
+  const superN=entries.filter(e=>e.tags?.includes("Super Pending")).length;
   const dupeN=useMemo(()=>{const s={};entries.forEach(e=>{const k=(e.title||"").toLowerCase().trim();if(k)s[k]=(s[k]||0)+1;});return Object.values(s).filter(n=>n>1).length;},[entries]);
 
   const getRowBg=e=>{
@@ -1145,7 +1086,7 @@ function App(){
           if(backup&&backup.entries&&backup.entries.length>0){
             setEntries(backup.entries);
             saveCache(backup.entries);
-            setSyncStatus("✅ Recovered "+backup.entries.length+" entries from backup ("+backup.(savedAt&&savedAt.slice)(0,10)+")");
+            setSyncStatus("✅ Recovered "+backup.entries.length+" entries from backup ("+backup.savedAt?.slice(0,10)+")");
           } else {
             // Try today's backup
             const todayKey=LS_CACHE+"_"+new Date().toISOString().slice(0,10);
@@ -1187,10 +1128,9 @@ function App(){
           <button onClick={()=>{const l=filterPerson||filterTag||filterAccount||filterVendor||filterStatus||(filterCat!=="All"?filterCat:"")||"All Tasks";exportPDF(filtered,l);}} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓PDF({filtered.length})</button>
           <button onClick={()=>exportCSV(entries)} style={{...fSel,border:"1.5px solid #c8a060",background:"rgba(255,255,255,.08)",color:"#f0cc80",fontSize:11,fontWeight:600}}>↓CSV</button>
           {URL_USER==="main"&&[
-            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash",bg:"#1a5a8a"},
-            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning",bg:"#c8006a"},
-            {l:"⚠️ Pending",c:"Business - Orders",t:"Pending Tasks",bg:"#c00",tags:["Pending","Super Pending"]},
-          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||"",tags:q.tags||["Pending"]});setShowForm(true);}} style={{padding:"6px 12px",background:q.bg||"#1a5a8a",color:"#fff",border:"none",borderRadius:8,border:"none",background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{q.l}</button>)}
+            {l:"💰 Prakash",c:"Finance - Bank",t:"Payment Collected",p:"Prakash"},
+            {l:"💍 Wedding",c:"Personal - Wedding",t:"Wedding Planning"},
+          ].map(q=><button key={q.l} onClick={()=>{setEditE({category:q.c,taskType:q.t,person:q.p||""});setShowForm(true);}} style={{padding:"6px 12px",borderRadius:8,border:"none",background:q.l.includes("Prakash")?"#1a5a8a":"#c8006a",color:"#fff",cursor:"pointer",fontSize:12,fontWeight:700}}>{q.l}</button>)}
           {IS_FAMILY&&[
             {l:"💍",c:"Personal - Wedding",t:"Wedding Planning"},
             {l:"💰",c:"Personal - Expense",t:"Expense"},
@@ -1237,10 +1177,10 @@ function App(){
           </thead>
           <tbody>
             {filtered.map((e,idx)=>{
-              const ov=isOverdue(e.reminder)&&!e.(tags&&tags.includes)("Done");
-              const isDone=e.(tags&&tags.includes)("Done");
-              const isSP=e.(tags&&tags.includes)("Super Pending");
-              return<tr key={e.id} className="rh" style={{background:getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:(isDone&&isDone.72):1,outline:isSP?"2px solid #8B0000":"none"}}>
+              const ov=isOverdue(e.reminder)&&!e.tags?.includes("Done");
+              const isDone=e.tags?.includes("Done");
+              const isSP=e.tags?.includes("Super Pending");
+              return<tr key={e.id} className="rh" style={{background:getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:isDone?.72:1,outline:isSP?"2px solid #8B0000":"none"}}>
                 <td style={{padding:"7px 8px",fontSize:11,color:"#b09060"}}>{isSP?"🔴":idx+1}</td>
                 <td style={{padding:"7px 8px",fontSize:11,whiteSpace:"nowrap",color:"#5a3800"}}>{fmtDate(e.date)}{e.month&&<div style={{fontSize:9,color:"#9a7040"}}>{e.month}</div>}</td>
                 <td style={{padding:"7px 8px",minWidth:140,maxWidth:200}}>
@@ -1261,7 +1201,7 @@ function App(){
                   {e.financialType&&<div style={{fontSize:9,color:"#5a7a00"}}>{e.financialType}</div>}
                   {e.paymentStatus&&<span style={{fontSize:9,display:"inline-block",marginTop:1,background:e.paymentStatus==="Paid"?"#d4edda":e.paymentStatus==="Overdue"?"#f8d7da":e.paymentStatus==="Payment Pending"?"#fff3cd":"#e8e8e8",color:e.paymentStatus==="Paid"?"#155724":e.paymentStatus==="Overdue"?"#721c24":e.paymentStatus==="Payment Pending"?"#856404":"#444",padding:"1px 6px",borderRadius:10,fontWeight:700,whiteSpace:"nowrap"}}>{e.paymentStatus}</span>}
                 </td>
-                <td style={{padding:"7px 8px",minWidth:90}}><div style={{display:"flex",flexWrap:"wrap",gap:2}}>{e.(tags&&tags.map)(t=><TagBadge key={t} tag={t}/>)}</div></td>
+                <td style={{padding:"7px 8px",minWidth:90}}><div style={{display:"flex",flexWrap:"wrap",gap:2}}>{e.tags?.map(t=><TagBadge key={t} tag={t}/>)}</div></td>
                 <td style={{padding:"7px 8px",fontSize:10,whiteSpace:"nowrap"}}>
                   {e.reminder?<span style={{color:ov?"#c00":"#006aaa",fontWeight:ov?700:500}}>{ov?"🔴":"📲"} {fmtDate(e.reminder.slice(0,10))}{e.isRecurring&&<span style={{display:"block",color:"#5a8a30",fontSize:9}}>🔁</span>}</span>:<span style={{color:"#d0c0a0"}}>—</span>}
                 </td>
@@ -1282,7 +1222,7 @@ function App(){
 
     {/* BOTTOM BAR */}
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"linear-gradient(135deg,#2a1800,#4a2e00)",borderTop:"1px solid #7a5020",padding:"5px 12px",display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",zIndex:100}}>
-      {STATUS_TAGS.slice(0,5).map(t=>{const n=entries.filter(e=>e.(tags&&tags.includes)(t)).length;return n>0?<span key={t} onClick={()=>setFilterTag(filterTag===t?"":t)} style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><TagBadge tag={t}/><span style={{fontSize:10,color:"#d0a060"}}>{n}</span></span>:null;})}
+      {STATUS_TAGS.slice(0,5).map(t=>{const n=entries.filter(e=>e.tags?.includes(t)).length;return n>0?<span key={t} onClick={()=>setFilterTag(filterTag===t?"":t)} style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><TagBadge tag={t}/><span style={{fontSize:10,color:"#d0a060"}}>{n}</span></span>:null;})}
       <span style={{fontSize:9,color:"#9a7040",marginLeft:"auto"}}>📊 Google Sheets</span>
     </div>
 
@@ -1293,7 +1233,7 @@ function App(){
           <div><div style={{fontSize:11,color:"#9a8060",fontWeight:600,marginBottom:3}}>{fmtDate(viewE.date)}{viewE.month?" · "+viewE.month:""}</div>
             <h2 style={{margin:0,fontSize:18,color:"#2a1a00"}}>{viewE.title}</h2></div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {!viewE.(tags&&tags.includes)("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
+            {!viewE.tags?.includes("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
             <button onClick={()=>shareEntry(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:12,fontWeight:700}}>📤 Share</button>
             <button onClick={()=>shareEntryHTML(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #5a3a8a",background:"#f5eeff",color:"#5a1a8a",cursor:"pointer",fontSize:12}}>🖼 Card</button>
             <button onClick={()=>{setEditE(viewE);setViewE(null);setShowForm(true);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:12}}>✏️</button>
@@ -1301,7 +1241,7 @@ function App(){
             <button onClick={()=>delEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #f5a8ab",background:"#fff5f5",color:"#c00",cursor:"pointer",fontSize:12}}>🗑</button>
           </div>
         </div>
-        {viewE.(tags&&tags.length)>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{viewE.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
+        {viewE.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{viewE.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
           {[["taskType","Task"],["person","Person"],["vendor","Vendor"],["account","Account"],["financialType","Financial"],["paymentStatus","Status"],["property","Property"],["chemical","Chemical"],["amount","Amount"],["month","Month"]].filter(([k])=>viewE[k]).map(([k,l])=><span key={k} style={{background:"#f9f3e8",border:"1px solid #e8dcc0",borderRadius:8,padding:"3px 11px",fontSize:12,color:"#5a3800"}}><span style={{color:"#9a7040",fontWeight:700,fontSize:10,textTransform:"uppercase",letterSpacing:.4,marginRight:4}}>{l}</span>{viewE[k]}</span>)}
         </div>
@@ -1311,7 +1251,7 @@ function App(){
           <span style={{fontSize:13,fontWeight:700,color:isOverdue(viewE.reminder)?"#c00":"#006aaa"}}>📲 {isOverdue(viewE.reminder)?"OVERDUE · ":""}{fmtDT(viewE.reminder)}{viewE.isRecurring&&<span style={{marginLeft:8,fontSize:11,color:"#5a8a30"}}>🔁 Monthly</span>}</span>
           {viewE.reminderNote&&<div style={{fontSize:12,color:"#005a8a",marginTop:3}}>{viewE.reminderNote}</div>}
         </div>}
-        {viewE.(attachments&&attachments.length)>0&&<div><div className="lbl" style={{marginBottom:6}}>Attachments</div><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{viewE.attachments.map((a,i)=><Thumb key={i} att={a}/>)}</div></div>}
+        {viewE.attachments?.length>0&&<div><div className="lbl" style={{marginBottom:6}}>Attachments</div><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{viewE.attachments.map((a,i)=><Thumb key={i} att={a}/>)}</div></div>}
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:14}}><button className="bgh" onClick={()=>setViewE(null)}>Close</button></div>
       </div>}
     </Modal>
@@ -1327,23 +1267,7 @@ function App(){
   </div>;
 }
 
-class ErrorBoundary extends React.Component{
-  constructor(p){super(p);this.state={err:null};}
-  static getDerivedStateFromError(e){return{err:String(e&&e.message||e)};}
-  render(){
-    if(this.state.err){
-      return React.createElement("div",{style:{padding:24,background:"#fff0f0",margin:20,borderRadius:12}},
-        React.createElement("h2",{style:{color:"#c00",marginBottom:12}},"⚠️ Error - Screenshot this:"),
-        React.createElement("pre",{style:{whiteSpace:"pre-wrap",fontSize:12,background:"#fff",padding:12,borderRadius:8}},this.state.err),
-        React.createElement("button",{onClick:function(){window.location.reload();},style:{marginTop:12,padding:"8px 20px",background:"#1a5a8a",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontSize:14}},"Reload")
-      );
-    }
-    return this.props.children;
-  }
-}
-ReactDOM.createRoot(document.getElementById("root")).render(
-  React.createElement(ErrorBoundary,null,React.createElement(App,null))
-);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
