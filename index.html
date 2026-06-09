@@ -1006,25 +1006,37 @@ function App(){
   };
 
   const refresh=async()=>{
-    // Manual sync — push local to sheets, never overwrite local
-    setLoading(true);setSyncStatus("📤 Syncing to Google Sheets...");
+    setLoading(true);setSyncStatus("🔄 Syncing...");
     const cached=loadCache();
-    if(cached.length===0){setSyncStatus("📱 No entries to sync");setLoading(false);return;}
     try{
       const r=await sheetsAPI("getAll");
-      const sheetIds=new Set((r.entries||[]).map(e=>e.id));
+      if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");setLoading(false);return;}
+      // Always merge: Sheets + local → local takes priority
+      const sm={};
+      (r.entries||[]).forEach(e=>{
+        if(e&&e.id){
+          const s={tags:[],attachments:[],hidden:false};
+          Object.keys(e).forEach(k=>{
+            if(k==="tags")s.tags=Array.isArray(e[k])?e[k]:[];
+            else if(k==="attachments")s.attachments=Array.isArray(e[k])?e[k]:[];
+            else if(k==="hidden")s.hidden=!!e[k];
+            else s[k]=(e[k]===null||e[k]===undefined)?"":String(e[k]);
+          });
+          sm[s.id]=s;
+        }
+      });
+      const lm={};cached.forEach(e=>{if(e&&e.id)lm[e.id]=e;});
+      const merged=Object.values(Object.assign({},sm,lm));
+      merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
+      setEntries(merged);saveCache(merged);
+      // Push any local-only entries to Sheets
+      const sheetIds=new Set(Object.keys(sm));
       const toSync=cached.filter(e=>!sheetIds.has(e.id));
-      if(toSync.length>0){
-        await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
-        setSyncStatus("✅ "+cached.length+" entries · "+toSync.length+" new backed up · "+new Date().toLocaleTimeString("en-IN"));
-      } else {
-        setSyncStatus("✅ All "+cached.length+" entries backed up · "+new Date().toLocaleTimeString("en-IN"));
-      }
-    }catch(e){
-      setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");
-    }
+      if(toSync.length>0)await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
+      setSyncStatus("✅ "+merged.length+" entries · synced "+new Date().toLocaleTimeString("en-IN"));
+    }catch(ex){setSyncStatus("📴 Sync failed: "+String(ex.message||ex));}
     setLoading(false);
-  };
+  };;
 
   const allPersons=[...new Set([...dropdowns.persons,...entries.map(e=>e.person).filter(Boolean)])];
   const allAccounts=[...new Set([...dropdowns.accounts,...entries.map(e=>e.account).filter(Boolean)])];
