@@ -341,7 +341,7 @@ function Thumb({att,small}){
       if(w){w.document.write(`<img src="${att.data}" style="max-width:100%" />`);w.document.close();}
     }
   };
-  if(att.type?.startsWith("image/"))return<div onClick={openAtt} style={{...b,overflow:"hidden",cursor:"zoom-in"}}><img src={att.data} alt={att.name||"image"} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
+  if(att.(type&&type.startsWith)("image/"))return<div onClick={openAtt} style={{...b,overflow:"hidden",cursor:"zoom-in"}}><img src={att.data} alt={att.name||"image"} style={{width:"100%",height:"100%",objectFit:"cover"}}/></div>;
   const p=att.type==="application/pdf";
   return<div onClick={openAtt} style={{...b,background:p?"#fff0f0":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:small?9:11,color:p?"#b00":"#339",fontWeight:700,flexDirection:"column",gap:1}}>
     <span style={{fontSize:small?14:18}}>{p?"📄":"📎"}</span>
@@ -573,7 +573,7 @@ function AIPanel({entries,onClose}){
     </div>
     <div style={{display:"flex",gap:8,marginBottom:12}}>
       <textarea className="inp" value={q} rows={2} placeholder="Ask anything about your data…" onChange={e=>setQ(e.target.value)} style={{resize:"none"}}/>
-      <button onClick={()=>ask()} disabled={loading} className="ai-btn" style={{alignSelf:"stretch",whiteSpace:"nowrap",opacity:loading?.6:1}}>{loading?"…":"Ask"}</button>
+      <button onClick={()=>ask()} disabled={loading} className="ai-btn" style={{alignSelf:"stretch",whiteSpace:"nowrap",opacity:(loading&&loading.6):1}}>{loading?"…":"Ask"}</button>
     </div>
     {loading&&<div style={{textAlign:"center",padding:"20px",color:"#7a5aaa",fontSize:13}}>🧠 Analysing {entries.length} entries…</div>}
     {result&&<div style={{background:"linear-gradient(135deg,#f8f0ff,#f0e8ff)",border:"1.5px solid #c8a8e8",borderRadius:10,padding:"14px",fontSize:13,color:"#2a0050",whiteSpace:"pre-wrap",lineHeight:1.7}}>{result}</div>}
@@ -629,7 +629,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
   const G2={display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12};
 
   return<div>
-    <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{initial?.id?"✏️ Edit":"✨ New Entry"}</h2>
+    <h2 style={{margin:"0 0 14px",fontSize:18,color:"#3a2a0e",fontWeight:700}}>{(initial&&initial.id)?"✏️ Edit":"✨ New Entry"}</h2>
 
     {/* VOICE INPUT */}
     <VoiceInput onResult={applyVoiceData} dropdowns={dropdowns}/>
@@ -706,7 +706,7 @@ function EntryForm({initial,onSave,onClose,dropdowns,onAddToDropdown,saving}){
     </div>
     <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
       <button className="bgh" onClick={onClose}>Cancel</button>
-      <button className="bg" disabled={saving} onClick={()=>{if(!f.title.trim()){alert("Please add a title.");return;}if(!f.date){alert("Please set a date.");return;}onSave(f);}} style={{opacity:saving?.7:1}}>
+      <button className="bg" disabled={saving} onClick={()=>{if(!f.title.trim()){alert("Please add a title.");return;}if(!f.date){alert("Please set a date.");return;}onSave(f);}} style={{opacity:(saving&&saving.7):1}}>
         {saving?"Saving…":"Save Entry"}
       </button>
     </div>
@@ -720,12 +720,12 @@ function ShareableView(){
   const filtered=entries.filter(e=>{
     if(VIEW_PERSON&&(e.person||"").toLowerCase()!==VIEW_PERSON.toLowerCase())return false;
     if(VIEW_ACCOUNT&&(e.account||"").toLowerCase()!==VIEW_ACCOUNT.toLowerCase())return false;
-    if(VIEW_TAG&&!e.tags?.map(t=>t.toLowerCase()).includes(VIEW_TAG.toLowerCase()))return false;
+    if(VIEW_TAG&&!e.(tags&&tags.map)(t=>t.toLowerCase()).includes(VIEW_TAG.toLowerCase()))return false;
     if(VIEW_CATEGORY&&(e.category||"").toLowerCase()!==VIEW_CATEGORY.toLowerCase())return false;
     return true;
   }).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const pending=filtered.filter(e=>!e.tags?.includes("Done"));
-  const done=filtered.filter(e=>e.tags?.includes("Done"));
+  const pending=filtered.filter(e=>!e.(tags&&tags.includes)("Done"));
+  const done=filtered.filter(e=>e.(tags&&tags.includes)("Done"));
 
   return<div style={{minHeight:"100vh",background:"linear-gradient(160deg,#fdf8ef,#f8f2e4)",fontFamily:"'Palatino Linotype',serif"}}>
     <div style={{background:"linear-gradient(135deg,#2a1800,#5a3800)",padding:"16px 18px"}}>
@@ -738,9 +738,9 @@ function ShareableView(){
         <div>
           {pending.length>0&&<div style={{marginBottom:20}}>
             <div style={{fontSize:12,fontWeight:700,color:"#8B0000",marginBottom:10}}><span style={{background:"#8B0000",color:"#fff",borderRadius:20,padding:"2px 10px"}}>⏳ Pending — {pending.length}</span></div>
-            {pending.map((e,i)=><div key={e.id} style={{background:e.tags?.includes("Super Pending")?"#fff0f0":"#fffdf7",border:`1.5px solid ${e.tags?.includes("Super Pending")?"#f5c6cb":"#e8dcc8"}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
+            {pending.map((e,i)=><div key={e.id} style={{background:e.(tags&&tags.includes)("Super Pending")?"#fff0f0":"#fffdf7",border:`1.5px solid ${e.(tags&&tags.includes)("Super Pending")?"#f5c6cb":"#e8dcc8"}`,borderRadius:12,padding:"12px 14px",marginBottom:8}}>
               <div style={{fontWeight:700,fontSize:14,color:"#2a1600",marginBottom:4}}>{e.title}</div>
-              {e.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>{e.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
+              {e.(tags&&tags.length)>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:6}}>{e.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
               <div style={{display:"flex",flexWrap:"wrap",gap:6,fontSize:12}}>
                 {e.amount&&<span style={{color:"#1a5a00",fontWeight:700}}>{e.amount}</span>}
                 {e.taskType&&<span style={{color:"#5a3800"}}>{e.taskType}</span>}
@@ -796,7 +796,7 @@ function shareEntry(entry){
   if(entry.paymentStatus) lines.push("💳 "+entry.paymentStatus);
   if(entry.property) lines.push("🏠 "+entry.property);
   if(entry.chemical) lines.push("🧪 "+entry.chemical);
-  if(entry.tags?.length) lines.push("🏷 "+entry.tags.join(", "));
+  if(entry.(tags&&tags.length)) lines.push("🏷 "+entry.tags.join(", "));
   if(entry.notes)    lines.push("\n📝 "+entry.notes);
   if(entry.reminder) lines.push("⏰ "+fmtDT(entry.reminder)+(entry.reminderNote?" — "+entry.reminderNote:""));
   if(entry.link)     lines.push("🔗 "+(entry.linkLabel||entry.link)+": "+entry.link);
@@ -824,8 +824,8 @@ function shareEntry(entry){
 function shareEntryHTML(entry){
   const w=window.open("","_blank");
   const atts=(entry.attachments||[]);
-  const imgs=atts.filter(a=>a.type?.startsWith("image/"));
-  const docs=atts.filter(a=>!a.type?.startsWith("image/"));
+  const imgs=atts.filter(a=>a.(type&&type.startsWith)("image/"));
+  const docs=atts.filter(a=>!a.(type&&type.startsWith)("image/"));
 
   const imgHtml=imgs.map(a=>`<img src="${a.data}" style="max-width:100%;border-radius:8px;margin:4px 0;display:block;border:1.5px solid #e2d9c8" onclick="window.open(this.src)" />`).join("");
   const docHtml=docs.map(a=>`<a href="${a.data}" target="_blank" download="${a.name||"file"}" style="display:inline-block;padding:8px 14px;background:#f0f4ff;border-radius:8px;font-size:13px;color:#339;margin:4px;text-decoration:none;border:1px solid #c0c8f0">📄 ${a.name||"Download File"}</a>`).join("");
@@ -872,7 +872,7 @@ function exportCSV(entries){
 }
 
 function exportPDF(entries,label){
-  const isDone=e=>e.tags?.includes("Done");
+  const isDone=e=>e.(tags&&tags.includes)("Done");
   const pending=entries.filter(e=>!isDone(e));
   const done=entries.filter(e=>isDone(e));
   const rows=(list,title)=>{
@@ -1077,9 +1077,9 @@ function App(){
 
   const filtered=useMemo(()=>entries.filter(e=>{
     if(e.hidden&&!showHidden)return false;
-    if(hideDone&&e.tags?.includes("Done"))return false;
+    if(hideDone&&e.(tags&&tags.includes)("Done"))return false;
     if(filterCat!=="All"&&e.category!==filterCat)return false;
-    if(filterTag&&!e.tags?.includes(filterTag))return false;
+    if(filterTag&&!e.(tags&&tags.includes)(filterTag))return false;
     if(filterPerson&&e.person!==filterPerson)return false;
     if(filterAccount&&e.account!==filterAccount)return false;
     if(filterVendor&&e.vendor!==filterVendor)return false;
@@ -1092,8 +1092,8 @@ function App(){
     return(a.title||"").localeCompare(b.title||"");
   }),[entries,hideDone,filterCat,filterTag,filterPerson,filterAccount,filterVendor,filterStatus,search,sort]);
 
-  const overdueN=entries.filter(e=>isOverdue(e.reminder)&&!e.tags?.includes("Done")).length;
-  const superN=entries.filter(e=>e.tags?.includes("Super Pending")).length;
+  const overdueN=entries.filter(e=>isOverdue(e.reminder)&&!e.(tags&&tags.includes)("Done")).length;
+  const superN=entries.filter(e=>e.(tags&&tags.includes)("Super Pending")).length;
   const dupeN=useMemo(()=>{const s={};entries.forEach(e=>{const k=(e.title||"").toLowerCase().trim();if(k)s[k]=(s[k]||0)+1;});return Object.values(s).filter(n=>n>1).length;},[entries]);
 
   const getRowBg=e=>{
@@ -1145,7 +1145,7 @@ function App(){
           if(backup&&backup.entries&&backup.entries.length>0){
             setEntries(backup.entries);
             saveCache(backup.entries);
-            setSyncStatus("✅ Recovered "+backup.entries.length+" entries from backup ("+backup.savedAt?.slice(0,10)+")");
+            setSyncStatus("✅ Recovered "+backup.entries.length+" entries from backup ("+backup.(savedAt&&savedAt.slice)(0,10)+")");
           } else {
             // Try today's backup
             const todayKey=LS_CACHE+"_"+new Date().toISOString().slice(0,10);
@@ -1237,10 +1237,10 @@ function App(){
           </thead>
           <tbody>
             {filtered.map((e,idx)=>{
-              const ov=isOverdue(e.reminder)&&!e.tags?.includes("Done");
-              const isDone=e.tags?.includes("Done");
-              const isSP=e.tags?.includes("Super Pending");
-              return<tr key={e.id} className="rh" style={{background:getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:isDone?.72:1,outline:isSP?"2px solid #8B0000":"none"}}>
+              const ov=isOverdue(e.reminder)&&!e.(tags&&tags.includes)("Done");
+              const isDone=e.(tags&&tags.includes)("Done");
+              const isSP=e.(tags&&tags.includes)("Super Pending");
+              return<tr key={e.id} className="rh" style={{background:getRowBg(e),borderBottom:"1px solid #f0e8d8",opacity:(isDone&&isDone.72):1,outline:isSP?"2px solid #8B0000":"none"}}>
                 <td style={{padding:"7px 8px",fontSize:11,color:"#b09060"}}>{isSP?"🔴":idx+1}</td>
                 <td style={{padding:"7px 8px",fontSize:11,whiteSpace:"nowrap",color:"#5a3800"}}>{fmtDate(e.date)}{e.month&&<div style={{fontSize:9,color:"#9a7040"}}>{e.month}</div>}</td>
                 <td style={{padding:"7px 8px",minWidth:140,maxWidth:200}}>
@@ -1261,7 +1261,7 @@ function App(){
                   {e.financialType&&<div style={{fontSize:9,color:"#5a7a00"}}>{e.financialType}</div>}
                   {e.paymentStatus&&<span style={{fontSize:9,display:"inline-block",marginTop:1,background:e.paymentStatus==="Paid"?"#d4edda":e.paymentStatus==="Overdue"?"#f8d7da":e.paymentStatus==="Payment Pending"?"#fff3cd":"#e8e8e8",color:e.paymentStatus==="Paid"?"#155724":e.paymentStatus==="Overdue"?"#721c24":e.paymentStatus==="Payment Pending"?"#856404":"#444",padding:"1px 6px",borderRadius:10,fontWeight:700,whiteSpace:"nowrap"}}>{e.paymentStatus}</span>}
                 </td>
-                <td style={{padding:"7px 8px",minWidth:90}}><div style={{display:"flex",flexWrap:"wrap",gap:2}}>{e.tags?.map(t=><TagBadge key={t} tag={t}/>)}</div></td>
+                <td style={{padding:"7px 8px",minWidth:90}}><div style={{display:"flex",flexWrap:"wrap",gap:2}}>{e.(tags&&tags.map)(t=><TagBadge key={t} tag={t}/>)}</div></td>
                 <td style={{padding:"7px 8px",fontSize:10,whiteSpace:"nowrap"}}>
                   {e.reminder?<span style={{color:ov?"#c00":"#006aaa",fontWeight:ov?700:500}}>{ov?"🔴":"📲"} {fmtDate(e.reminder.slice(0,10))}{e.isRecurring&&<span style={{display:"block",color:"#5a8a30",fontSize:9}}>🔁</span>}</span>:<span style={{color:"#d0c0a0"}}>—</span>}
                 </td>
@@ -1282,7 +1282,7 @@ function App(){
 
     {/* BOTTOM BAR */}
     <div style={{position:"fixed",bottom:0,left:0,right:0,background:"linear-gradient(135deg,#2a1800,#4a2e00)",borderTop:"1px solid #7a5020",padding:"5px 12px",display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",zIndex:100}}>
-      {STATUS_TAGS.slice(0,5).map(t=>{const n=entries.filter(e=>e.tags?.includes(t)).length;return n>0?<span key={t} onClick={()=>setFilterTag(filterTag===t?"":t)} style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><TagBadge tag={t}/><span style={{fontSize:10,color:"#d0a060"}}>{n}</span></span>:null;})}
+      {STATUS_TAGS.slice(0,5).map(t=>{const n=entries.filter(e=>e.(tags&&tags.includes)(t)).length;return n>0?<span key={t} onClick={()=>setFilterTag(filterTag===t?"":t)} style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}><TagBadge tag={t}/><span style={{fontSize:10,color:"#d0a060"}}>{n}</span></span>:null;})}
       <span style={{fontSize:9,color:"#9a7040",marginLeft:"auto"}}>📊 Google Sheets</span>
     </div>
 
@@ -1293,7 +1293,7 @@ function App(){
           <div><div style={{fontSize:11,color:"#9a8060",fontWeight:600,marginBottom:3}}>{fmtDate(viewE.date)}{viewE.month?" · "+viewE.month:""}</div>
             <h2 style={{margin:0,fontSize:18,color:"#2a1a00"}}>{viewE.title}</h2></div>
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {!viewE.tags?.includes("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
+            {!viewE.(tags&&tags.includes)("Done")&&<button onClick={()=>markDone(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #88cc88",background:"#edfaed",color:"#1a5a1a",cursor:"pointer",fontSize:12,fontWeight:700}}>✅ Done</button>}
             <button onClick={()=>shareEntry(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #0088cc",background:"#e8f4fb",color:"#006aaa",cursor:"pointer",fontSize:12,fontWeight:700}}>📤 Share</button>
             <button onClick={()=>shareEntryHTML(viewE)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #5a3a8a",background:"#f5eeff",color:"#5a1a8a",cursor:"pointer",fontSize:12}}>🖼 Card</button>
             <button onClick={()=>{setEditE(viewE);setViewE(null);setShowForm(true);}} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #c8a060",background:"#fff8ee",color:"#8a5a00",cursor:"pointer",fontSize:12}}>✏️</button>
@@ -1301,7 +1301,7 @@ function App(){
             <button onClick={()=>delEntry(viewE.id)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #f5a8ab",background:"#fff5f5",color:"#c00",cursor:"pointer",fontSize:12}}>🗑</button>
           </div>
         </div>
-        {viewE.tags?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{viewE.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
+        {viewE.(tags&&tags.length)>0&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>{viewE.tags.map(t=><TagBadge key={t} tag={t}/>)}</div>}
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
           {[["taskType","Task"],["person","Person"],["vendor","Vendor"],["account","Account"],["financialType","Financial"],["paymentStatus","Status"],["property","Property"],["chemical","Chemical"],["amount","Amount"],["month","Month"]].filter(([k])=>viewE[k]).map(([k,l])=><span key={k} style={{background:"#f9f3e8",border:"1px solid #e8dcc0",borderRadius:8,padding:"3px 11px",fontSize:12,color:"#5a3800"}}><span style={{color:"#9a7040",fontWeight:700,fontSize:10,textTransform:"uppercase",letterSpacing:.4,marginRight:4}}>{l}</span>{viewE[k]}</span>)}
         </div>
@@ -1311,7 +1311,7 @@ function App(){
           <span style={{fontSize:13,fontWeight:700,color:isOverdue(viewE.reminder)?"#c00":"#006aaa"}}>📲 {isOverdue(viewE.reminder)?"OVERDUE · ":""}{fmtDT(viewE.reminder)}{viewE.isRecurring&&<span style={{marginLeft:8,fontSize:11,color:"#5a8a30"}}>🔁 Monthly</span>}</span>
           {viewE.reminderNote&&<div style={{fontSize:12,color:"#005a8a",marginTop:3}}>{viewE.reminderNote}</div>}
         </div>}
-        {viewE.attachments?.length>0&&<div><div className="lbl" style={{marginBottom:6}}>Attachments</div><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{viewE.attachments.map((a,i)=><Thumb key={i} att={a}/>)}</div></div>}
+        {viewE.(attachments&&attachments.length)>0&&<div><div className="lbl" style={{marginBottom:6}}>Attachments</div><div style={{display:"flex",flexWrap:"wrap",gap:8}}>{viewE.attachments.map((a,i)=><Thumb key={i} att={a}/>)}</div></div>}
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:14}}><button className="bgh" onClick={()=>setViewE(null)}>Close</button></div>
       </div>}
     </Modal>
