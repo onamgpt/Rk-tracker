@@ -992,25 +992,19 @@ function App(){
   };
 
   const refresh=async()=>{
-    // Manual sync — push local to sheets, never overwrite local
-    setLoading(true);setSyncStatus("📤 Syncing to Google Sheets...");
+    setLoading(true);setSyncStatus("📤 Syncing...");
     const cached=loadCache();
     if(cached.length===0){setSyncStatus("📱 No entries to sync");setLoading(false);return;}
     try{
-      const r=await sheetsAPI("getAll");
-      const sheetIds=new Set((r.entries||[]).map(e=>e.id));
-      const toSync=cached.filter(e=>!sheetIds.has(e.id));
-      if(toSync.length>0){
-        await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
-        setSyncStatus("✅ "+cached.length+" entries · "+toSync.length+" new backed up · "+new Date().toLocaleTimeString("en-IN"));
-      } else {
-        setSyncStatus("✅ All "+cached.length+" entries backed up · "+new Date().toLocaleTimeString("en-IN"));
-      }
-    }catch(e){
-      setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");
+      // Push ALL entries to Sheets (upsert - Apps Script handles duplicates by ID)
+      const results=await Promise.all(cached.map(e=>sheetsAPI("save",{entry:e}).catch(()=>({error:true}))));
+      const failed=results.filter(r=>r&&r.error).length;
+      setSyncStatus("✅ "+cached.length+" entries synced"+(failed>0?" ("+failed+" failed)":"")+" · "+new Date().toLocaleTimeString("en-IN"));
+    }catch(ex){
+      setSyncStatus("📴 Sync failed: "+String(ex.message||""));
     }
     setLoading(false);
-  };
+  };;
 
   const allPersons=[...new Set([...dropdowns.persons,...entries.map(e=>e.person).filter(Boolean)])];
   const allAccounts=[...new Set([...dropdowns.accounts,...entries.map(e=>e.account).filter(Boolean)])];
