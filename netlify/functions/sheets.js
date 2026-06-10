@@ -1,4 +1,5 @@
 const https = require("https");
+const url_module = require("url");
 
 exports.handler = async (event) => {
   const h = {
@@ -11,9 +12,9 @@ exports.handler = async (event) => {
 
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWwuTJCzA5viwHOaZpHrlJOzZtmxS-8pfyEDh2zpF6a2xGihE6jt8iRv-J9A3jZq_32g/exec";
 
-  function makeGet(url) {
+  function makeGet(targetUrl) {
     return new Promise(function(resolve, reject) {
-      https.get(url, {headers:{"User-Agent":"Mozilla/5.0"}}, function(res) {
+      https.get(targetUrl, {headers:{"User-Agent":"Mozilla/5.0"}}, function(res) {
         if (res.statusCode === 301 || res.statusCode === 302) {
           return makeGet(res.headers.location).then(resolve).catch(reject);
         }
@@ -24,25 +25,61 @@ exports.handler = async (event) => {
     });
   }
 
+  function makePost(targetUrl, postData) {
+    return new Promise(function(resolve, reject) {
+      var parsed = url_module.parse(targetUrl);
+      var bodyStr = typeof postData === "string" ? postData : JSON.stringify(postData);
+      var options = {
+        hostname: parsed.hostname,
+        path: parsed.path,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(bodyStr),
+          "User-Agent": "Mozilla/5.0"
+        }
+      };
+      var req = https.request(options, function(res) {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          return makeGet(res.headers.location).then(resolve).catch(reject);
+        }
+        var data = "";
+        res.on("data", function(chunk){data += chunk;});
+        res.on("end", function(){resolve(data);});
+      });
+      req.on("error", reject);
+      req.write(bodyStr);
+      req.end();
+    });
+  }
+
   try {
     var body = JSON.parse(event.body || "{}");
     var action = body.action || "getAll";
-    var url = SCRIPT_URL + "?action=" + action;
-    
+    var raw;
+
     if (action === "save" && body.entry) {
-      url += "&entry=" + encodeURIComponent(JSON.stringify(body.entry));
+      // Use POST for save to handle large entries with attachments
+      // Strip attachments from Sheets save - save only text data
+      var entry = Object.assign({}, body.entry);
+      var hasAttachments = entry.attachments && entry.attachments.length > 0;
+      entry.attachments = hasAttachments ? "["+entry.attachments.length+" files]" : "";
+      var postBody = JSON.stringify({action: "save", entry: entry});
+      raw = await makePost(SCRIPT_URL, postBody);
     } else if (action === "delete" && body.id) {
-      url += "&id=" + encodeURIComponent(body.id);
-    } else if (action === "getDropdowns") {
-      url += "";
+      var delUrl = SCRIPT_URL + "?action=delete&id=" + encodeURIComponent(body.id);
+      raw = await makeGet(delUrl);
+    } else {
+      // getAll, getDropdowns etc
+      var getUrl = SCRIPT_URL + "?action=" + action;
+      raw = await makeGet(getUrl);
     }
 
-    var raw = await makeGet(url);
     try {
-      var parsed = JSON.parse(raw);
-      return {statusCode:200,headers:h,body:JSON.stringify(parsed)};
+      var parsed2 = JSON.parse(raw);
+      return {statusCode:200,headers:h,body:JSON.stringify(parsed2)};
     } catch(e) {
-      return {statusCode:200,headers:h,body:raw||"{}"};
+      return {statusCode:200,headers:h,body:JSON.stringify({success:true,raw:raw.slice(0,100)})};
     }
   } catch(e) {
     return {statusCode:500,headers:h,body:JSON.stringify({error:e.message})};
