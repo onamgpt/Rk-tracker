@@ -930,15 +930,21 @@ function App(){
     if(cached.length>0){
       sheetsAPI("getAll").then(r=>{
         if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");return;}
-        const ids=new Set(r.entries.map(e=>e.id));
-        const missing=cached.filter(e=>!ids.has(e.id));
-        if(missing.length>0){
-          missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
-          setSyncStatus("✅ "+cached.length+" entries · "+missing.length+" backed up");
+        // LOCAL IS MASTER - only add from Sheets what's missing locally
+        const localIds=new Set(cached.map(e=>e.id));
+        const toAdd=(r.entries||[]).filter(e=>e&&e.id&&!localIds.has(e.id));
+        if(toAdd.length>0){
+          const merged=cached.concat(toAdd);
+          merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
+          setEntries(merged);saveCache(merged);
+          setSyncStatus("✅ "+merged.length+" entries · "+toAdd.length+" loaded from Sheets");
+        } else if(cached.length===0&&r.entries.length>0){
+          setEntries(r.entries);saveCache(r.entries);
+          setSyncStatus("✅ "+r.entries.length+" entries loaded from Sheets");
         } else {
-          setSyncStatus("✅ "+cached.length+" entries · all in Sheets");
+          setSyncStatus("✅ "+cached.length+" entries · up to date");
         }
-      }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
+      }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));ies safe"));
     }
     sheetsAPI("getDropdowns").then(r=>{if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));}).catch(()=>{});
   },[]);
