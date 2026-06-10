@@ -930,21 +930,15 @@ function App(){
     if(cached.length>0){
       sheetsAPI("getAll").then(r=>{
         if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");return;}
-        // LOCAL IS MASTER - only add from Sheets what's missing locally
-        const localIds=new Set(cached.map(e=>e.id));
-        const toAdd=(r.entries||[]).filter(e=>e&&e.id&&!localIds.has(e.id));
-        if(toAdd.length>0){
-          const merged=cached.concat(toAdd);
-          merged.sort((a,b)=>(b.createdAt||b.date||"").localeCompare(a.createdAt||a.date||""));
-          setEntries(merged);saveCache(merged);
-          setSyncStatus("✅ "+merged.length+" entries · "+toAdd.length+" loaded from Sheets");
-        } else if(cached.length===0&&r.entries.length>0){
-          setEntries(r.entries);saveCache(r.entries);
-          setSyncStatus("✅ "+r.entries.length+" entries loaded from Sheets");
+        const ids=new Set(r.entries.map(e=>e.id));
+        const missing=cached.filter(e=>!ids.has(e.id));
+        if(missing.length>0){
+          missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
+          setSyncStatus("✅ "+cached.length+" entries · "+missing.length+" backed up");
         } else {
-          setSyncStatus("✅ "+cached.length+" entries · up to date");
+          setSyncStatus("✅ "+cached.length+" entries · all in Sheets");
         }
-      }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));ies safe"));
+      }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
     }
     sheetsAPI("getDropdowns").then(r=>{if(r.dropdowns)setDropdowns(p=>({...p,...r.dropdowns}));}).catch(()=>{});
   },[]);
@@ -998,19 +992,25 @@ function App(){
   };
 
   const refresh=async()=>{
-    setLoading(true);setSyncStatus("📤 Syncing...");
+    // Manual sync — push local to sheets, never overwrite local
+    setLoading(true);setSyncStatus("📤 Syncing to Google Sheets...");
     const cached=loadCache();
     if(cached.length===0){setSyncStatus("📱 No entries to sync");setLoading(false);return;}
     try{
-      // Push ALL entries to Sheets (upsert - Apps Script handles duplicates by ID)
-      const results=await Promise.all(cached.map(e=>sheetsAPI("save",{entry:e}).catch(()=>({error:true}))));
-      const failed=results.filter(r=>r&&r.error).length;
-      setSyncStatus("✅ "+cached.length+" entries synced"+(failed>0?" ("+failed+" failed)":"")+" · "+new Date().toLocaleTimeString("en-IN"));
-    }catch(ex){
-      setSyncStatus("📴 Sync failed: "+String(ex.message||""));
+      const r=await sheetsAPI("getAll");
+      const sheetIds=new Set((r.entries||[]).map(e=>e.id));
+      const toSync=cached.filter(e=>!sheetIds.has(e.id));
+      if(toSync.length>0){
+        await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
+        setSyncStatus("✅ "+cached.length+" entries · "+toSync.length+" new backed up · "+new Date().toLocaleTimeString("en-IN"));
+      } else {
+        setSyncStatus("✅ All "+cached.length+" entries backed up · "+new Date().toLocaleTimeString("en-IN"));
+      }
+    }catch(e){
+      setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");
     }
     setLoading(false);
-  };;
+  };
 
   const allPersons=[...new Set([...dropdowns.persons,...entries.map(e=>e.person).filter(Boolean)])];
   const allAccounts=[...new Set([...dropdowns.accounts,...entries.map(e=>e.account).filter(Boolean)])];
