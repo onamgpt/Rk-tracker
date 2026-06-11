@@ -111,6 +111,24 @@ function fmtDate(d){if(!d)return"—";return new Date(d+"T00:00:00").toLocaleDat
 function fmtDT(d){if(!d)return"—";return new Date(d).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});}
 function isOverdue(r){return r&&new Date(r)<new Date();}
 
+function sanitizeEntry(e){
+  if(!e||typeof e!=="object"||!e.id)return null;
+  var out={};
+  ["id","title","date","month","category","taskType","person","vendor","account",
+   "financialType","paymentStatus","property","chemical","amount","notes",
+   "reminder","reminderNote","link","createdAt","loggedBy","loggedByName"].forEach(function(k){
+    out[k]=(e[k]===null||e[k]===undefined)?"":String(e[k]);
+  });
+  if(Array.isArray(e.tags))out.tags=e.tags;
+  else if(typeof e.tags==="string"&&e.tags)out.tags=e.tags.split(",").map(function(t){return t.trim();}).filter(Boolean);
+  else out.tags=[];
+  out.attachments=Array.isArray(e.attachments)?e.attachments:[];
+  out.hidden=!!e.hidden;
+  out.recurring=!!e.recurring;
+  if(!out.title)return null;
+  return out;
+}
+
 function loadCache(){
   try{
     const all={};
@@ -930,13 +948,21 @@ function App(){
     if(cached.length>0){
       sheetsAPI("getAll").then(r=>{
         if(r.error||!r.entries){setSyncStatus("📴 Offline · "+cached.length+" entries safe");return;}
-        const ids=new Set(r.entries.map(e=>e.id));
-        const missing=cached.filter(e=>!ids.has(e.id));
-        if(missing.length>0){
-          missing.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
-          setSyncStatus("✅ "+cached.length+" entries · "+missing.length+" backed up");
+        // LOCAL IS MASTER. Never replace local entries. Two add-only directions:
+        const localIds=new Set(cached.map(e=>e.id));
+        const sheetIds=new Set(r.entries.map(e=>e.id));
+        // a) push local entries missing in Sheets
+        const toPush=cached.filter(e=>!sheetIds.has(e.id));
+        toPush.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
+        // b) ADD (never replace) Sheets entries missing locally, sanitized
+        const toAdd=r.entries.filter(e=>e&&e.id&&!localIds.has(e.id)).map(sanitizeEntry).filter(Boolean);
+        if(toAdd.length>0){
+          const merged=cached.concat(toAdd);
+          merged.sort((a,b)=>String(b.createdAt||b.date||"").localeCompare(String(a.createdAt||a.date||"")));
+          setEntries(merged);saveCache(merged);
+          setSyncStatus("✅ "+merged.length+" entries · "+toAdd.length+" from Sheets"+(toPush.length>0?" · "+toPush.length+" backed up":""));
         } else {
-          setSyncStatus("✅ "+cached.length+" entries · all in Sheets");
+          setSyncStatus("✅ "+cached.length+" entries"+(toPush.length>0?" · "+toPush.length+" backed up":" · all in Sheets"));
         }
       }).catch(()=>setSyncStatus("📴 Offline · "+cached.length+" entries safe"));
     }
@@ -992,19 +1018,26 @@ function App(){
   };
 
   const refresh=async()=>{
-    // Manual sync — push local to sheets, never overwrite local
-    setLoading(true);setSyncStatus("📤 Syncing to Google Sheets...");
+    // Two-way ADD-ONLY sync. Local is master: nothing local is ever replaced or removed.
+    setLoading(true);setSyncStatus("📤 Syncing...");
     const cached=loadCache();
-    if(cached.length===0){setSyncStatus("📱 No entries to sync");setLoading(false);return;}
     try{
       const r=await sheetsAPI("getAll");
-      const sheetIds=new Set((r.entries||[]).map(e=>e.id));
-      const toSync=cached.filter(e=>!sheetIds.has(e.id));
-      if(toSync.length>0){
-        await Promise.all(toSync.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
-        setSyncStatus("✅ "+cached.length+" entries · "+toSync.length+" new backed up · "+new Date().toLocaleTimeString("en-IN"));
+      if(r.error||!r.entries){setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");setLoading(false);return;}
+      const localIds=new Set(cached.map(e=>e.id));
+      const sheetIds=new Set(r.entries.map(e=>e.id));
+      // push local-only entries to Sheets
+      const toPush=cached.filter(e=>!sheetIds.has(e.id));
+      if(toPush.length>0)await Promise.all(toPush.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
+      // add Sheets-only entries locally (sanitized), never replacing existing
+      const toAdd=r.entries.filter(e=>e&&e.id&&!localIds.has(e.id)).map(sanitizeEntry).filter(Boolean);
+      if(toAdd.length>0){
+        const merged=cached.concat(toAdd);
+        merged.sort((a,b)=>String(b.createdAt||b.date||"").localeCompare(String(a.createdAt||a.date||"")));
+        setEntries(merged);saveCache(merged);
+        setSyncStatus("✅ "+merged.length+" entries · ↓"+toAdd.length+" added · ↑"+toPush.length+" backed up · "+new Date().toLocaleTimeString("en-IN"));
       } else {
-        setSyncStatus("✅ All "+cached.length+" entries backed up · "+new Date().toLocaleTimeString("en-IN"));
+        setSyncStatus("✅ "+cached.length+" entries · ↑"+toPush.length+" backed up · "+new Date().toLocaleTimeString("en-IN"));
       }
     }catch(e){
       setSyncStatus("📴 Offline — "+cached.length+" entries safe locally");
