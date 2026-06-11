@@ -211,6 +211,14 @@ async function tgSend(text){
 }
 
 // ── FILE HELPERS ──────────────────────────────────────────────────────────────
+function uploadToDrive(att){
+  // Upload a single attachment to Drive via Apps Script, return Drive URL
+  return sheetsAPI("uploadFile",{file:{name:att.name,type:att.type,data:att.data}}).then(function(r){
+    if(r&&r.url)return {name:att.name,type:"drive",data:r.url,driveId:r.id};
+    return att; // fallback: keep original if upload fails
+  }).catch(function(){return att;});
+}
+
 function fileToB64(f){
   return new Promise((res,rej)=>{
     if(f.type.startsWith("image/")){
@@ -971,8 +979,27 @@ function App(){
 
   const saveEntry=async(entry)=>{
     setSaving(true);
-    setEntries(p=>{const ex=p.find(x=>x.id===entry.id);const updated=ex?p.map(x=>x.id===entry.id?entry:x):[entry,...p];saveCache(updated);return updated;});
-    sheetsAPI("save",{entry}).then(r=>{
+    // Upload any base64 attachments to Google Drive first
+    var finalEntry=Object.assign({},entry);
+    if(entry.attachments&&entry.attachments.length>0&&url){
+      try{
+        var uploaded=await Promise.all(entry.attachments.map(function(a){
+          if(a&&a.data&&a.data.length>100&&a.type!=="drive"){
+            return uploadToDrive(a);
+          }
+          return Promise.resolve(a);
+        }));
+        finalEntry=Object.assign({},entry,{attachments:uploaded});
+        // Set link to first Drive URL if link field is empty
+        var firstDrive=uploaded.find(function(a){return a&&a.type==="drive";});
+        if(firstDrive&&!finalEntry.link){
+          finalEntry.link=firstDrive.data;
+          finalEntry.linkLabel="📎 Photo";
+        }
+      }catch(e){}
+    }
+    setEntries(p=>{const ex=p.find(x=>x.id===finalEntry.id);const updated=ex?p.map(x=>x.id===finalEntry.id?finalEntry:x):[finalEntry,...p];saveCache(updated);return updated;});
+    sheetsAPI("save",{entry:finalEntry}).then(r=>{
       setSyncStatus(r.error?"📱 Saved locally · syncing...":"✅ Saved · backed up to Sheets");
     }).catch(()=>setSyncStatus("📱 Saved locally"));
     if(entry.person&&!dropdowns.persons.includes(entry.person))addToDropdown("persons",entry.person);
