@@ -597,6 +597,36 @@ function downloadAIMReport(){
   }).catch(function(){});
 }
 
+
+// ───────────────────────── AUTO PORTFOLIO UPDATE AFTER TRADE ─────────────────────────
+// Updates: share qty, weighted avg (buys), cash pool, AIM Portfolio Control
+// Lichello rule: PC increases by HALF of every buy amount; PC unchanged on sells
+function applyTradeLocally(sym, action, shares, price){
+  var amount = shares * price;
+  for(var i=0;i<S.holdings.length;i++){
+    var h = S.holdings[i];
+    if(h.sym !== sym) continue;
+    if(!h.pc || h.pc<=0) h.pc = h.avg * h.qty;   // initialise PC if missing
+    if(action === "BUY"){
+      h.avg = (h.avg*h.qty + amount) / (h.qty + shares);
+      h.qty = h.qty + shares;
+      h.pc  = h.pc + amount/2;                    // Lichello: PC up by half the buy
+      S.cash = Math.max(0, S.cash - amount);
+    } else if(action === "SELL"){
+      h.qty = Math.max(0, h.qty - shares);
+      S.cash = S.cash + amount;                   // sale proceeds into single pool
+      // avg and PC unchanged on sells per AIM
+    }
+    break;
+  }
+  save(S);
+  renderHoldings();
+  document.getElementById("cash-input").value = S.cash;
+  alert("✅ Portfolio updated\n" + sym + ": new position saved\nCash pool: ₹" + Math.round(S.cash).toLocaleString("en-IN") + "\n\nNote: market fill price may differ slightly — tap Import Holdings tomorrow to reconcile exact averages from Zerodha.");
+  fetch("/.netlify/functions/telegram", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({message:"📊 <b>Portfolio Updated</b>\n" + action + " " + shares + " x " + sym + " @ ~₹" + Math.round(price) + "\nCash pool: ₹" + Math.round(S.cash).toLocaleString("en-IN")})}).catch(function(){});
+}
+
 // ───────────────────────── ONE-TAP ORDER (manual press, double confirm) ─────────────────────────
 function placeKiteOrder(sym, action, shares, ltp){
   var token = S.settings.kiteToken;
@@ -612,7 +642,9 @@ function placeKiteOrder(sym, action, shares, ltp){
       order:{tradingsymbol:sym, transaction_type:action, quantity:shares}})
   }).then(function(r){return r.json();}).then(function(d){
     if(d.data && d.data.order_id){
-      alert("✅ Order placed! ID: " + d.data.order_id + "\n\nCheck Zerodha Kite app for status. Then update Portfolio tab with new quantity.");
+      if(confirm("✅ Order placed! ID: " + d.data.order_id + "\n\nUpdate portfolio now?\n(Updates shares, cash pool and AIM control in one tap)")){
+        applyTradeLocally(sym, action, shares, ltp);
+      }
       fetch("/.netlify/functions/telegram", {method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({message:"⚡ <b>Order Placed</b>\n" + action + " " + shares + " x " + sym + "\nOrder ID: " + d.data.order_id})}).catch(function(){});
     } else {
