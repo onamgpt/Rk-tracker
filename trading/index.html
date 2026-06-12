@@ -98,6 +98,7 @@ h4{font-size:13px;margin:12px 0 6px;color:var(--blue)}
   <div class="status">AIM rules: single cash pool · sell only if profitable · 5% midpoint trigger to avoid overtrading</div>
   <div id="signals-list"></div>
   <button onclick="runAIM()">🎯 Calculate AIM Signals</button>
+  <button class="sec" onclick="downloadAIMReport()">⬇ Download Report (Sells first, Buys next)</button>
 </div>
 
 <!-- BACKTEST -->
@@ -335,7 +336,9 @@ function aimSignal(h, ltp, safePct, trigPct){
   }
 }
 
+var LAST_SIGNALS = [];
 function runAIM(){
+  LAST_SIGNALS = [];
   var el = document.getElementById("signals-list");
   el.innerHTML = '<div class="status">📡 Fetching prices and calculating...</div>';
   var safePct = S.settings.safe||10, trigPct = S.settings.trigger||5;
@@ -347,6 +350,7 @@ function runAIM(){
     fetchQuote(h.sym).then(function(ltp){
       if(ltp) S.prices[h.sym]=ltp;
       var sig = aimSignal(h, ltp, safePct, trigPct);
+      LAST_SIGNALS.push({sym:h.sym, ltp:ltp, qty:h.qty, avg:h.avg, sig:sig});
       var cls = sig.action==="BUY"?"buy":(sig.action==="SELL"?"sell":"hold");
       html += '<div class="card">'
         + '<div class="row"><strong>' + h.sym + '</strong><span class="sig ' + cls + '">' + sig.action + '</span></div>'
@@ -354,6 +358,7 @@ function runAIM(){
         + '<div class="row"><span class="lbl">Holding</span><span class="val">' + h.qty + ' @ ' + inr(h.avg) + '</span></div>'
         + '<div class="row"><span class="lbl">Portfolio Control</span><span class="val blue">' + inr(sig.pc||h.avg*h.qty) + '</span></div>'
         + (sig.shares>0 ? '<div class="row"><span class="lbl">Order</span><span class="val gold">' + sig.action + ' ' + sig.shares + ' shares ≈ ' + inr(sig.amount) + '</span></div>' : '')
+        + (sig.shares>0 ? '<button onclick="placeKiteOrder(&quot;' + h.sym + '&quot;,&quot;' + sig.action + '&quot;,' + sig.shares + ',' + ltp + ')">⚡ Place ' + sig.action + ' Order in Zerodha</button>' : '')
         + '<div class="muted">' + sig.reason + '</div>'
         + '</div>';
       done++;
@@ -548,6 +553,73 @@ function saveSettings(){
   alert("✅ Settings saved");
 }
 
+
+
+// ───────────────────────── AIM REPORT (sells first, buys next) ─────────────────────────
+function downloadAIMReport(){
+  if(LAST_SIGNALS.length===0){ alert("Tap Calculate AIM Signals first"); return; }
+  var sells = LAST_SIGNALS.filter(function(s){return s.sig.action==="SELL";});
+  var buys  = LAST_SIGNALS.filter(function(s){return s.sig.action==="BUY";});
+  var holds = LAST_SIGNALS.filter(function(s){return s.sig.action==="HOLD";});
+  var now = new Date();
+  var lines = "RK TRADING - AIM SIGNALS REPORT\n";
+  lines += now.toLocaleDateString("en-IN",{weekday:"long",day:"2-digit",month:"long",year:"numeric"}) + " " + now.toLocaleTimeString("en-IN") + "\n";
+  lines += "Execute SELLS FIRST (frees cash), then BUYS.\n";
+  lines += "==========================================\n\n";
+  lines += "STEP 1 - SELL ORDERS (" + sells.length + ")\n------------------------\n";
+  if(sells.length===0) lines += "None today.\n";
+  sells.forEach(function(s,i){
+    lines += (i+1) + ". SELL " + s.sig.shares + " x " + s.sym + " @ ~Rs" + Math.round(s.ltp) + " = Rs" + Math.round(s.sig.amount).toLocaleString("en-IN") + "\n";
+  });
+  lines += "\nSTEP 2 - BUY ORDERS (" + buys.length + ")\n------------------------\n";
+  if(buys.length===0) lines += "None today.\n";
+  buys.forEach(function(s,i){
+    lines += (i+1) + ". BUY " + s.sig.shares + " x " + s.sym + " @ ~Rs" + Math.round(s.ltp) + " = Rs" + Math.round(s.sig.amount).toLocaleString("en-IN") + "\n";
+  });
+  lines += "\nHOLD (" + holds.length + "): " + holds.map(function(s){return s.sym;}).join(", ") + "\n";
+  lines += "\nCash pool: Rs" + Math.round(S.cash).toLocaleString("en-IN") + "\n";
+  lines += "\nAfter executing, update quantity/avg in Portfolio tab.\n";
+
+  // Download as .txt
+  try{
+    var blob = new Blob([lines], {type:"text/plain"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "AIM-Report-" + now.toISOString().slice(0,10) + ".txt";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }catch(e){}
+
+  // Also send to Telegram (HTML format)
+  var tmsg = lines.replace(/\n/g, "\n");
+  fetch("/.netlify/functions/telegram", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({message: "📋 <b>AIM Report</b>\n\n" + lines})
+  }).catch(function(){});
+}
+
+// ───────────────────────── ONE-TAP ORDER (manual press, double confirm) ─────────────────────────
+function placeKiteOrder(sym, action, shares, ltp){
+  var token = S.settings.kiteToken;
+  if(!token){ alert("Connect Zerodha first (Settings tab)"); return; }
+  var approx = Math.round(shares*ltp).toLocaleString("en-IN");
+  var msg1 = action + " " + shares + " shares of " + sym + " at MARKET price (~Rs" + approx + ")?\n\nThis places a REAL order in your Zerodha account.";
+  if(!confirm(msg1)) return;
+  if(!confirm("FINAL CONFIRMATION:\n" + action + " " + shares + " x " + sym + "\n\nProceed?")) return;
+
+  fetch("/.netlify/functions/kite", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({action:"placeOrder", access_token:token,
+      order:{tradingsymbol:sym, transaction_type:action, quantity:shares}})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.data && d.data.order_id){
+      alert("✅ Order placed! ID: " + d.data.order_id + "\n\nCheck Zerodha Kite app for status. Then update Portfolio tab with new quantity.");
+      fetch("/.netlify/functions/telegram", {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({message:"⚡ <b>Order Placed</b>\n" + action + " " + shares + " x " + sym + "\nOrder ID: " + d.data.order_id})}).catch(function(){});
+    } else {
+      alert("❌ Order failed: " + (d.message || JSON.stringify(d).slice(0,200)));
+    }
+  }).catch(function(e){ alert("❌ Error: " + e.message); });
+}
 
 // ───────────────────────── KITE API ─────────────────────────
 function kiteLogin(){
