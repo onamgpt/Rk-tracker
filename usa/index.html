@@ -128,7 +128,16 @@ h4{font-size:13px;margin:12px 0 6px;color:var(--blue)}
 
 <!-- SCREENER -->
 <div class="page" id="page-screener">
-  <div class="status">Scans 240 major US stocks (S&P 500 leaders + SPCX + growth names) — below 1-year midpoint + volatile = high AIM score. Takes ~2 min.</div>
+  <div class="status">Below 1-year midpoint + healthy volatility = high AIM score. WDC-style winners hide in the full market.</div>
+  <div class="card">
+    <div class="field"><label>Universe</label>
+      <select id="scr-universe">
+        <option value="top240">Quick Scan — 240 majors (2 min)</option>
+        <option value="full">FULL US Market — every NASDAQ + NYSE stock, ~5000+ (10-15 min)</option>
+      </select>
+    </div>
+    <div class="muted">Full scan uses the official exchange symbol directories. Safety filters auto-remove ETFs, penny stocks under $5, and data glitches — only investable candidates are ranked.</div>
+  </div>
   <button onclick="runScreener()">🔍 Scan US Stocks</button>
   <button class="sec" onclick="SCR_CANCEL=true">⏹ Stop Scan</button>
   <div id="screener-results" style="margin-top:10px"></div>
@@ -511,10 +520,21 @@ function downloadScreenerPDF(){
   }catch(e){ alert("PDF error: " + e.message + " — use CSV"); }
 }
 
+function getFullUSList(){
+  return fetch("/.netlify/functions/yahoo?action=uslist")
+    .then(function(r){ return r.json(); })
+    .then(function(d){ return (d.symbols && d.symbols.length>1000) ? d.symbols : null; })
+    .catch(function(){ return null; });
+}
+
 function runScreener(){
   SCR_CANCEL = false;
   var el = document.getElementById("screener-results");
-  var symbols = NIFTY;
+  var universe = document.getElementById("scr-universe").value;
+  var listP = (universe==="full") ? getFullUSList() : Promise.resolve(NIFTY);
+  el.innerHTML = '<div class="status">Preparing symbol list...</div>';
+  listP.then(function(symbols){
+  if(!symbols){ el.innerHTML = '<div class="status">❌ Could not load full US list — try Quick Scan</div>'; return; }
   var results = [];
   var done = 0;
   var total = symbols.length;
@@ -541,7 +561,7 @@ function runScreener(){
         }
         bd++; done++;
         if(done % 24 === 0 || done===total){
-          el.innerHTML = '<div class="status">📡 Scanned ' + done + '/' + total + '...</div>';
+          el.innerHTML = '<div class="status">📡 Scanned ' + done + '/' + total + ' · found ' + results.length + ' · ETA ' + Math.ceil((total-done)/12*0.9/60) + ' min</div>';
         }
         if(bd===batch.length){ setTimeout(function(){ processBatch(start+12); }, 250); }
       });
@@ -550,7 +570,7 @@ function runScreener(){
 
   function finish(cancelled){
     var clean = results.filter(function(r){
-      return r.ltp>=2 && r.vol>=0.5 && r.vol<=8 && r.posPct>=0 && r.posPct<=100;
+      return r.ltp>=5 && r.vol>=0.5 && r.vol<=8 && r.posPct>=0 && r.posPct<=100;
     });
     clean.sort(function(a,b){ return b.score-a.score; });
     SCR_RESULTS = clean;
@@ -572,6 +592,7 @@ function runScreener(){
   }
 
   processBatch(0);
+  });
 }
 
 
