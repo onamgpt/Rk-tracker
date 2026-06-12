@@ -1,0 +1,109 @@
+const https = require("https");
+const crypto = require("crypto");
+
+exports.handler = async (event) => {
+  const h = {
+    "Access-Control-Allow-Origin": "*",
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
+  };
+  if (event.httpMethod === "OPTIONS") return {statusCode:200, headers:h, body:""};
+
+  const API_KEY    = process.env.KITE_API_KEY;
+  const API_SECRET = process.env.KITE_API_SECRET;
+
+  function kiteGet(path, token) {
+    return new Promise(function(resolve, reject) {
+      var opts = {
+        hostname: "api.kite.trade",
+        path: path,
+        method: "GET",
+        headers: {
+          "X-Kite-Version": "3",
+          "Authorization": "token " + API_KEY + ":" + token
+        }
+      };
+      https.request(opts, function(res) {
+        var data = "";
+        res.on("data", function(c){ data += c; });
+        res.on("end", function(){ resolve(data); });
+      }).on("error", reject).end();
+    });
+  }
+
+  function kitePost(path, body) {
+    return new Promise(function(resolve, reject) {
+      var postData = Object.keys(body).map(function(k){
+        return encodeURIComponent(k) + "=" + encodeURIComponent(body[k]);
+      }).join("&");
+      var opts = {
+        hostname: "api.kite.trade",
+        path: path,
+        method: "POST",
+        headers: {
+          "X-Kite-Version": "3",
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": Buffer.byteLength(postData)
+        }
+      };
+      var req = https.request(opts, function(res) {
+        var data = "";
+        res.on("data", function(c){ data += c; });
+        res.on("end", function(){ resolve(data); });
+      });
+      req.on("error", reject);
+      req.write(postData);
+      req.end();
+    });
+  }
+
+  try {
+    var body = JSON.parse(event.body || "{}");
+    var action = body.action || "";
+
+    // Generate login URL for user to authenticate
+    if (action === "loginUrl") {
+      var url = "https://kite.zerodha.com/connect/login?api_key=" + API_KEY + "&v=3";
+      return {statusCode:200, headers:h, body:JSON.stringify({url:url})};
+    }
+
+    // Exchange request_token for access_token
+    if (action === "getToken") {
+      var reqToken = body.request_token;
+      var checksum = crypto.createHash("sha256")
+        .update(API_KEY + reqToken + API_SECRET)
+        .digest("hex");
+      var raw = await kitePost("/session/token", {
+        api_key: API_KEY,
+        request_token: reqToken,
+        checksum: checksum
+      });
+      var d = JSON.parse(raw);
+      return {statusCode:200, headers:h, body:JSON.stringify(d)};
+    }
+
+    // Get holdings
+    if (action === "holdings") {
+      var raw2 = await kiteGet("/portfolio/holdings", body.access_token);
+      return {statusCode:200, headers:h, body:raw2};
+    }
+
+    // Get positions
+    if (action === "positions") {
+      var raw3 = await kiteGet("/portfolio/positions", body.access_token);
+      return {statusCode:200, headers:h, body:raw3};
+    }
+
+    // Get quote for multiple symbols
+    if (action === "quote") {
+      var syms = (body.symbols||[]).map(function(s){ return "NSE:" + s; }).join("&i=");
+      var raw4 = await kiteGet("/quote?i=" + syms, body.access_token);
+      return {statusCode:200, headers:h, body:raw4};
+    }
+
+    return {statusCode:400, headers:h, body:JSON.stringify({error:"Unknown action"})};
+  } catch(e) {
+    return {statusCode:500, headers:h, body:JSON.stringify({error:e.message})};
+  }
+};
