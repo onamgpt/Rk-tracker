@@ -129,8 +129,18 @@ h4{font-size:13px;margin:12px 0 6px;color:var(--blue)}
 
 <!-- SCREENER -->
 <div class="page" id="page-screener">
-  <div class="status">Scans NIFTY stocks for AIM entry opportunities — stocks trading below their 1-year midpoint score higher</div>
+  <div class="status">Scans stocks for AIM entry opportunities — below 1-year midpoint + volatile = high score</div>
+  <div class="card">
+    <div class="field"><label>Universe</label>
+      <select id="scr-universe">
+        <option value="top70">Quick Scan — Top 70 (1 min)</option>
+        <option value="full">FULL NSE Market — all ~2000 stocks (5-8 min)</option>
+      </select>
+    </div>
+    <div class="muted">Full market scan needs Zerodha connected today (Settings tab) — it loads the official complete NSE list from Zerodha, including BSE Ltd and every listed stock.</div>
+  </div>
   <button onclick="runScreener()">🔍 Scan Stocks</button>
+  <button class="sec" onclick="SCR_CANCEL=true">⏹ Stop Scan</button>
   <div id="screener-results" style="margin-top:10px"></div>
 </div>
 
@@ -475,56 +485,90 @@ var NIFTY = ["RELIANCE","TCS","HDFCBANK","ICICIBANK","INFY","ITC","SBIN","BHARTI
 "LUPIN","AUROPHARMA","TVSMOTOR","SRF","BIOCON","ACC","VOLTAS","MUTHOOTFIN","ABB","DLF",
 "PFC","RECLTD","SAIL","FEDERALBNK","ASHOKLEY","BHARATFORG","ESCORTS","EXIDEIND","HAVELLS","SHK"];
 
+var SCR_CANCEL = false;
+function getFullNSEList(){
+  var token = S.settings.kiteToken;
+  if(!token) return Promise.resolve(null);
+  return fetch("/.netlify/functions/kite", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({action:"instruments", access_token:token})
+  }).then(function(r){return r.json();}).then(function(d){
+    return (d.symbols && d.symbols.length>100) ? d.symbols : null;
+  }).catch(function(){ return null; });
+}
+
 function runScreener(){
+  SCR_CANCEL = false;
   var el = document.getElementById("screener-results");
-  el.innerHTML = '<div class="status">📡 Scanning ' + NIFTY.length + ' stocks — takes ~30 seconds...</div>';
-  var results = [];
-  var done = 0;
+  var universe = document.getElementById("scr-universe").value;
+  el.innerHTML = '<div class="status">Preparing stock list...</div>';
 
-  // Process in batches of 5 to avoid hammering
-  function processBatch(start){
-    var batch = NIFTY.slice(start, start+5);
-    if(batch.length===0){ finish(); return; }
-    var bd = 0;
-    batch.forEach(function(sym){
-      fetchHistory(sym, "1y").then(function(data){
-        if(data && data.length>50){
-          var closes = data.map(function(d){return d.close;});
-          var hi = Math.max.apply(null, closes);
-          var lo = Math.min.apply(null, closes);
-          var ltp = closes[closes.length-1];
-          var mid = (hi+lo)/2;
-          var posPct = (ltp-lo)/(hi-lo)*100;          // 0 = at low, 100 = at high
-          var vol = 0;                                 // volatility — AIM loves volatility
-          for(var i=1;i<closes.length;i++){ vol += Math.abs(closes[i]-closes[i-1])/closes[i-1]; }
-          vol = vol/closes.length*100;
-          // AIM score: below midpoint + volatile = good entry
-          var score = (100-posPct)*0.6 + vol*40*0.4;
-          results.push({sym:sym, ltp:ltp, hi:hi, lo:lo, posPct:posPct, vol:vol, score:score});
-        }
-        bd++; done++;
-        el.innerHTML = '<div class="status">📡 Scanned ' + done + '/' + NIFTY.length + '...</div>';
-        if(bd===batch.length){ setTimeout(function(){ processBatch(start+5); }, 400); }
-      });
+  var listPromise;
+  if(universe === "full"){
+    listPromise = getFullNSEList().then(function(syms){
+      if(!syms){
+        el.innerHTML = '<div class="status">❌ Full list needs Zerodha connected today. Connect in Settings, or use Quick Scan.</div>';
+        return null;
+      }
+      return syms;
     });
+  } else {
+    listPromise = Promise.resolve(NIFTY);
   }
 
-  function finish(){
-    results.sort(function(a,b){ return b.score-a.score; });
-    var html = '<div class="card"><h3>Top AIM Entry Candidates</h3><table><tr><th>Stock</th><th>LTP</th><th>vs 52wk</th><th>Score</th></tr>';
-    var top = results.slice(0,20);
-    for(var i=0;i<top.length;i++){
-      var r = top[i];
-      var posCls = r.posPct<40 ? "green" : (r.posPct>70 ? "red":"");
-      html += '<tr><td><strong>' + r.sym + '</strong></td><td>' + inr(r.ltp) + '</td>'
-        + '<td class="' + posCls + '">' + Math.round(r.posPct) + '%</td>'
-        + '<td>' + Math.round(r.score) + '</td></tr>';
+  listPromise.then(function(symbols){
+    if(!symbols) return;
+    var results = [];
+    var done = 0, failed = 0;
+    var total = symbols.length;
+    el.innerHTML = '<div class="status">📡 Scanning ' + total + ' stocks — you can leave this tab open...</div>';
+
+    function processBatch(start){
+      if(SCR_CANCEL){ finish(true); return; }
+      var batch = symbols.slice(start, start+12);
+      if(batch.length===0){ finish(false); return; }
+      var bd = 0;
+      batch.forEach(function(sym){
+        fetchHistory(sym, "1y").then(function(data){
+          if(data && data.length>50){
+            var closes = data.map(function(x){return x.close;});
+            var hi = Math.max.apply(null, closes);
+            var lo = Math.min.apply(null, closes);
+            var ltp = closes[closes.length-1];
+            var posPct = (hi>lo)? (ltp-lo)/(hi-lo)*100 : 50;
+            var vol = 0;
+            for(var i=1;i<closes.length;i++){ vol += Math.abs(closes[i]-closes[i-1])/closes[i-1]; }
+            vol = vol/closes.length*100;
+            var score = (100-posPct)*0.6 + vol*40*0.4;
+            results.push({sym:sym, ltp:ltp, posPct:posPct, vol:vol, score:score});
+          } else { failed++; }
+          bd++; done++;
+          if(done % 24 === 0 || done===total){
+            el.innerHTML = '<div class="status">📡 Scanned ' + done + '/' + total + ' · found ' + results.length + ' valid · ETA ' + Math.ceil((total-done)/12*0.8/60) + ' min</div>';
+          }
+          if(bd===batch.length){ setTimeout(function(){ processBatch(start+12); }, 250); }
+        });
+      });
     }
-    html += '</table><div class="muted">"vs 52wk": position between 52-week low (0%) and high (100%). Lower = closer to lows. Score combines low position + volatility — both favour AIM strategy entries.</div></div>';
-    el.innerHTML = html;
-  }
 
-  processBatch(0);
+    function finish(cancelled){
+      results.sort(function(a,b){ return b.score-a.score; });
+      var html2 = '<div class="card"><h3>' + (cancelled? "⏹ Stopped — partial results · ":"") + 'Top 50 AIM Entry Candidates (of ' + results.length + ' scanned)</h3><table><tr><th>#</th><th>Stock</th><th>LTP</th><th>vs 52wk</th><th>Vol</th><th>Score</th></tr>';
+      var top = results.slice(0,50);
+      for(var i=0;i<top.length;i++){
+        var r = top[i];
+        var posCls = r.posPct<40 ? "green" : (r.posPct>70 ? "red":"");
+        html2 += '<tr><td>' + (i+1) + '</td><td><strong>' + r.sym + '</strong></td><td>' + inr(r.ltp) + '</td>'
+          + '<td class="' + posCls + '">' + Math.round(r.posPct) + '%</td>'
+          + '<td>' + r.vol.toFixed(1) + '</td>'
+          + '<td><strong>' + Math.round(r.score) + '</strong></td></tr>';
+      }
+      html2 += '</table><div class="muted">"vs 52wk": 0% = at yearly low, 100% = at yearly high. Vol = avg daily move. Score favours low position + high volatility — ideal AIM entries. Backtest any candidate before investing.</div></div>';
+      el.innerHTML = html2;
+    }
+
+    processBatch(0);
+  });
 }
 
 // ───────────────────────── TELEGRAM REPORT ─────────────────────────
