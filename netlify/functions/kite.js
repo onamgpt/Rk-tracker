@@ -102,6 +102,41 @@ exports.handler = async (event) => {
       return {statusCode:200, headers:h, body:raw4};
     }
 
+    // Place a single order — only when user explicitly presses the button
+    if (action === "placeOrder") {
+      var o = body.order || {};
+      if(!o.tradingsymbol || !o.transaction_type || !o.quantity){
+        return {statusCode:400, headers:h, body:JSON.stringify({error:"Missing order fields"})};
+      }
+      var postData = "exchange=NSE"
+        + "&tradingsymbol=" + encodeURIComponent(o.tradingsymbol)
+        + "&transaction_type=" + encodeURIComponent(o.transaction_type)
+        + "&quantity=" + encodeURIComponent(String(o.quantity))
+        + "&product=CNC&order_type=MARKET&validity=DAY";
+      var raw5 = await new Promise(function(resolve, reject) {
+        var opts = {
+          hostname: "api.kite.trade",
+          path: "/orders/regular",
+          method: "POST",
+          headers: {
+            "X-Kite-Version": "3",
+            "Authorization": "token " + API_KEY + ":" + body.access_token,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Length": Buffer.byteLength(postData)
+          }
+        };
+        var rq = https.request(opts, function(res) {
+          var data = "";
+          res.on("data", function(c){ data += c; });
+          res.on("end", function(){ resolve(data); });
+        });
+        rq.on("error", reject);
+        rq.write(postData);
+        rq.end();
+      });
+      return {statusCode:200, headers:h, body:raw5};
+    }
+
     return {statusCode:400, headers:h, body:JSON.stringify({error:"Unknown action"})};
   } catch(e) {
     return {statusCode:500, headers:h, body:JSON.stringify({error:e.message})};
