@@ -137,6 +137,24 @@ exports.handler = async (event) => {
       return {statusCode:200, headers:h, body:raw5};
     }
 
+    // Full NSE instrument list (official, from Zerodha)
+    if (action === "instruments") {
+      var rawList = await kiteGet("/instruments/NSE", body.access_token);
+      // Parse CSV server-side, return only EQ symbols to keep payload small
+      var lines = rawList.split("\n");
+      var syms = [];
+      for (var li = 1; li < lines.length; li++) {
+        var cols = lines[li].split(",");
+        // CSV: instrument_token,exchange_token,tradingsymbol,name,last_price,expiry,strike,tick_size,lot_size,instrument_type,segment,exchange
+        if (cols.length > 11 && cols[9] === "EQ" && cols[10] === "NSE") {
+          var ts = cols[2];
+          // skip bonds/odd series with dashes/numbers suffixes
+          if (ts && ts.indexOf("-") === -1) syms.push(ts);
+        }
+      }
+      return {statusCode:200, headers:h, body:JSON.stringify({symbols:syms, count:syms.length})};
+    }
+
     return {statusCode:400, headers:h, body:JSON.stringify({error:"Unknown action"})};
   } catch(e) {
     return {statusCode:500, headers:h, body:JSON.stringify({error:e.message})};
