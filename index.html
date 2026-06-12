@@ -1335,7 +1335,7 @@ function App(){
     {selIds.length>0&&<div style={{position:"fixed",bottom:0,left:0,right:0,background:"#7a1010",padding:"10px 14px",zIndex:999,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 -2px 12px rgba(0,0,0,.3)"}}>
       <span style={{color:"#fff",fontWeight:700,fontSize:14}}>{selIds.length} selected</span>
       <div>
-        <button onClick={()=>setSelIds([])} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #fff",background:"transparent",color:"#fff",marginRight:8,fontSize:13,cursor:"pointer"}}>Clear</button>
+        <button onClick={()=>setSelIds(filtered.map(e=>e.id))} style={{padding:"8px 10px",borderRadius:8,border:"1px solid #fff",background:"transparent",color:"#fff",marginRight:8,fontSize:13,cursor:"pointer"}}>☑️ All Shown</button><button onClick={()=>setSelIds([])} style={{padding:"8px 14px",borderRadius:8,border:"1px solid #fff",background:"transparent",color:"#fff",marginRight:8,fontSize:13,cursor:"pointer"}}>Clear</button>
         <button onClick={bulkDelete} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#fff",color:"#7a1010",fontWeight:800,fontSize:13,cursor:"pointer"}}>🗑 Delete All</button>
       </div>
     </div>}
