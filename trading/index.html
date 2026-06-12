@@ -638,6 +638,18 @@ function importKiteHoldings(){
 
 // ───────────────────────── INIT ─────────────────────────
 (function init(){
+  // Auto-capture request_token when Zerodha redirects back
+  var urlParams = new URLSearchParams(window.location.search);
+  var reqToken = urlParams.get("request_token");
+  var status = urlParams.get("status");
+  if(reqToken && status === "success"){
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    // Switch to settings and exchange token
+    showPage("settings");
+    document.getElementById("kite-status").textContent = "🔄 Zerodha redirected — exchanging token...";
+    setTimeout(function(){ exchangeToken(reqToken); }, 500);
+  }
   document.getElementById("cash-input").value = S.cash || "";
   document.getElementById("set-client").value = S.settings.client||"FS0303";
   document.getElementById("set-key").value = S.settings.key||"";
