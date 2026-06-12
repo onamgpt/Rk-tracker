@@ -102,7 +102,8 @@ h4{font-size:13px;margin:12px 0 6px;color:var(--blue)}
     <div class="field"><label>Single AIM cash pool ₹ (shared across all stocks)</label><input id="cash-input" type="number" placeholder="100000"></div>
     <button class="sec" onclick="saveCash()">Update Cash</button>
   </div>
-  <button onclick="refreshPrices()">🔄 Refresh Live Prices</button>
+  <button onclick="syncTradesFromZerodha()">⚡ Sync Today\u2019s Trades from Zerodha</button>
+  <button class="sec" onclick="refreshPrices()">🔄 Refresh Live Prices</button>
   <button class="sec" onclick="sendReport()">📤 Send Report to Telegram</button>
 </div>
 
@@ -707,6 +708,56 @@ function downloadAIMReport(){
 
 
 
+
+// ───────────────────────── AUTO-SYNC TODAY'S TRADES FROM ZERODHA ─────────────────────────
+// Pulls today's order book, applies every COMPLETE order to the algorithm:
+// qty, weighted avg (buys), cash pool, AIM Portfolio Control. Dedupe by order_id.
+function syncTradesFromZerodha(){
+  var token = S.settings.kiteToken;
+  if(!token){ alert("Connect Zerodha first (Settings tab)"); return; }
+  if(!S.appliedOrders) S.appliedOrders = [];
+  var st = document.getElementById("pf-status");
+  st.textContent = "⚡ Fetching today's trades from Zerodha...";
+  fetch("/.netlify/functions/kite", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({action:"orders", access_token:token})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(!d.data){ st.textContent = "❌ " + (d.message||"Could not fetch orders"); return; }
+    var applied = 0, skipped = 0, summary = "";
+    d.data.forEach(function(o){
+      if(o.status !== "COMPLETE") return;
+      if(S.appliedOrders.indexOf(o.order_id) > -1){ skipped++; return; }
+      var sym = o.tradingsymbol;
+      var qty = o.filled_quantity || o.quantity || 0;
+      var price = o.average_price || o.price || 0;
+      var action = o.transaction_type;  // BUY or SELL
+      if(!sym || qty<=0 || price<=0) return;
+      // Ensure holding exists (for buys of new stocks)
+      var exists = false;
+      for(var i=0;i<S.holdings.length;i++){ if(S.holdings[i].sym===sym){exists=true;break;} }
+      if(!exists && action==="BUY"){ S.holdings.push({sym:sym, qty:0, avg:0, pc:0}); }
+      if(!exists && action==="SELL"){ return; }  // can't sell what app doesn't track
+      applyTradeLocally(sym, action, qty, price, true);
+      S.appliedOrders.push(o.order_id);
+      applied++;
+      summary += action + " " + qty + " x " + sym + " @ ₹" + Math.round(price) + "\n";
+    });
+    // keep dedupe list small
+    if(S.appliedOrders.length > 500) S.appliedOrders = S.appliedOrders.slice(-300);
+    save(S);
+    renderHoldings();
+    document.getElementById("cash-input").value = S.cash;
+    if(applied>0){
+      st.textContent = "✅ " + applied + " trades applied · cash pool ₹" + Math.round(S.cash).toLocaleString("en-IN");
+      alert("✅ Applied " + applied + " trades:\n\n" + summary + "\nCash pool now: ₹" + Math.round(S.cash).toLocaleString("en-IN") + "\n\nAIM Portfolio Control updated for every stock.");
+      fetch("/.netlify/functions/telegram", {method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({message:"⚡ <b>Trades Synced</b>\n" + summary + "Cash pool: ₹" + Math.round(S.cash).toLocaleString("en-IN")})}).catch(function(){});
+    } else {
+      st.textContent = skipped>0 ? "✅ All today's trades already applied" : "No completed trades found today";
+    }
+  }).catch(function(e){ st.textContent = "❌ " + e.message; });
+}
+
 // ───────────────────────── RECORD MANUAL TRADE ─────────────────────────
 function recordManualTrade(){
   var sym    = document.getElementById("t-sym").value.trim().toUpperCase();
@@ -729,7 +780,7 @@ function recordManualTrade(){
 // ───────────────────────── AUTO PORTFOLIO UPDATE AFTER TRADE ─────────────────────────
 // Updates: share qty, weighted avg (buys), cash pool, AIM Portfolio Control
 // Lichello rule: PC increases by HALF of every buy amount; PC unchanged on sells
-function applyTradeLocally(sym, action, shares, price){
+function applyTradeLocally(sym, action, shares, price, silent){
   var amount = shares * price;
   for(var i=0;i<S.holdings.length;i++){
     var h = S.holdings[i];
@@ -750,6 +801,7 @@ function applyTradeLocally(sym, action, shares, price){
   save(S);
   renderHoldings();
   document.getElementById("cash-input").value = S.cash;
+  if(silent) return;
   alert("✅ Portfolio updated\n" + sym + ": new position saved\nCash pool: ₹" + Math.round(S.cash).toLocaleString("en-IN") + "\n\nNote: market fill price may differ slightly — tap Import Holdings tomorrow to reconcile exact averages from Zerodha.");
   fetch("/.netlify/functions/telegram", {method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({message:"📊 <b>Portfolio Updated</b>\n" + action + " " + shares + " x " + sym + " @ ~₹" + Math.round(price) + "\nCash pool: ₹" + Math.round(S.cash).toLocaleString("en-IN")})}).catch(function(){});
