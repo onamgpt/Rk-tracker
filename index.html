@@ -129,6 +129,10 @@ function sanitizeEntry(e){
   return out;
 }
 
+var TOMB_KEY="rk_deleted_ids";
+function loadTombstones(){try{return JSON.parse(localStorage.getItem(TOMB_KEY))||[];}catch(e){return [];}}
+function addTombstones(ids){try{var t=loadTombstones();ids.forEach(function(id){if(t.indexOf(id)===-1)t.push(id);});if(t.length>1500)t=t.slice(-1000);localStorage.setItem(TOMB_KEY,JSON.stringify(t));}catch(e){}}
+
 function loadCache(){
   try{
     const all={};
@@ -964,7 +968,7 @@ function App(){
         const toPush=cached.filter(e=>!sheetIds.has(e.id));
         toPush.forEach(e=>sheetsAPI("save",{entry:e}).catch(()=>{}));
         // b) ADD (never replace) Sheets entries missing locally, sanitized
-        const toAdd=r.entries.filter(e=>e&&e.id&&!localIds.has(e.id)).map(sanitizeEntry).filter(Boolean);
+        const toAdd=r.entries.filter(e=>e&&e.id&&!localIds.has(e.id)&&loadTombstones().indexOf(e.id)===-1).map(sanitizeEntry).filter(Boolean);
         if(toAdd.length>0){
           const merged=cached.concat(toAdd);
           merged.sort((a,b)=>String(b.createdAt||b.date||"").localeCompare(String(a.createdAt||a.date||"")));
@@ -1012,6 +1016,7 @@ function App(){
   const delEntry=async(id)=>{
     if(!window.confirm("Delete this entry?"))return;
     if(!window.confirm("⚠️ Cannot be undone. Delete permanently?"))return;
+    addTombstones([id]);
     setEntries(p=>{const u=p.filter(e=>e.id!==id);saveCache(u);return u;});
     setViewE(null);
     await sheetsAPI("delete",{id});
@@ -1023,6 +1028,7 @@ function App(){
     if(!window.confirm("Delete "+selIds.length+" selected entries?"))return;
     if(!window.confirm("⚠️ Cannot be undone. Delete "+selIds.length+" entries permanently?"))return;
     const ids=selIds.slice();
+    addTombstones(ids);
     setEntries(p=>{const u=p.filter(e=>ids.indexOf(e.id)===-1);saveCache(u);return u;});
     setSelIds([]);
     ids.forEach(id=>{sheetsAPI("delete",{id}).catch(()=>{});});
@@ -1069,7 +1075,7 @@ function App(){
       const toPush=cached.filter(e=>!sheetIds.has(e.id));
       if(toPush.length>0)await Promise.all(toPush.map(e=>sheetsAPI("save",{entry:e}).catch(()=>{})));
       // add Sheets-only entries locally (sanitized), never replacing existing
-      const toAdd=r.entries.filter(e=>e&&e.id&&!localIds.has(e.id)).map(sanitizeEntry).filter(Boolean);
+      const toAdd=r.entries.filter(e=>e&&e.id&&!localIds.has(e.id)&&loadTombstones().indexOf(e.id)===-1).map(sanitizeEntry).filter(Boolean);
       if(toAdd.length>0){
         const merged=cached.concat(toAdd);
         merged.sort((a,b)=>String(b.createdAt||b.date||"").localeCompare(String(a.createdAt||a.date||"")));
