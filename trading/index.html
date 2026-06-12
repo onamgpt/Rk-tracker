@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>RK Trading — AIM Portfolio Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{--bg:#0d1421;--card:#16202f;--card2:#1c2940;--gold:#e8c468;--green:#4ade80;--red:#f87171;--blue:#60a5fa;--txt:#e2e8f0;--dim:#8b9bb3;--border:#2a3950}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -486,6 +487,47 @@ var NIFTY = ["RELIANCE","TCS","HDFCBANK","ICICIBANK","INFY","ITC","SBIN","BHARTI
 "PFC","RECLTD","SAIL","FEDERALBNK","ASHOKLEY","BHARATFORG","ESCORTS","EXIDEIND","HAVELLS","SHK"];
 
 var SCR_CANCEL = false;
+var SCR_RESULTS = [];
+
+function downloadScreenerCSV(){
+  if(SCR_RESULTS.length===0){ alert("Run a scan first"); return; }
+  var csv = "Rank,Symbol,LTP,Pos_vs_52wk_pct,Daily_Vol_pct,AIM_Score\n";
+  for(var i=0;i<SCR_RESULTS.length;i++){
+    var r = SCR_RESULTS[i];
+    csv += (i+1) + "," + r.sym + "," + r.ltp.toFixed(2) + "," + r.posPct.toFixed(1) + "," + r.vol.toFixed(2) + "," + Math.round(r.score) + "\n";
+  }
+  var blob = new Blob([csv], {type:"text/csv"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "AIM-Screener-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function downloadScreenerPDF(){
+  if(SCR_RESULTS.length===0){ alert("Run a scan first"); return; }
+  try{
+    var doc = new jspdf.jsPDF();
+    var now = new Date();
+    doc.setFontSize(16);
+    doc.text("RK Trading - AIM Screener Report", 14, 15);
+    doc.setFontSize(9);
+    doc.text(now.toLocaleDateString("en-IN") + " " + now.toLocaleTimeString("en-IN") + " | " + SCR_RESULTS.length + " stocks ranked best to least", 14, 22);
+    doc.setFontSize(8);
+    var y = 30;
+    doc.text("Rank  Symbol            LTP        vs52wk   Vol    Score", 14, y);
+    y += 5;
+    var top = SCR_RESULTS.slice(0, 200);
+    for(var i=0;i<top.length;i++){
+      var r = top[i];
+      var line = String(i+1).padEnd(6) + r.sym.padEnd(18) + ("Rs"+r.ltp.toFixed(0)).padEnd(11) + (Math.round(r.posPct)+"%").padEnd(9) + r.vol.toFixed(1).padEnd(7) + Math.round(r.score);
+      doc.text(line, 14, y);
+      y += 4.5;
+      if(y > 285){ doc.addPage(); y = 15; }
+    }
+    doc.save("AIM-Screener-" + now.toISOString().slice(0,10) + ".pdf");
+  }catch(e){ alert("PDF error: " + e.message + " — use CSV instead"); }
+}
+
 function getFullNSEList(){
   var token = S.settings.kiteToken;
   if(!token) return Promise.resolve(null);
@@ -552,18 +594,28 @@ function runScreener(){
     }
 
     function finish(cancelled){
-      results.sort(function(a,b){ return b.score-a.score; });
-      var html2 = '<div class="card"><h3>' + (cancelled? "⏹ Stopped — partial results · ":"") + 'Top 50 AIM Entry Candidates (of ' + results.length + ' scanned)</h3><table><tr><th>#</th><th>Stock</th><th>LTP</th><th>vs 52wk</th><th>Vol</th><th>Score</th></tr>';
-      var top = results.slice(0,50);
-      for(var i=0;i<top.length;i++){
-        var r = top[i];
+      // SANITY FILTERS: remove ETFs/data glitches and operator penny stocks
+      // Real stocks: daily vol 0.5-8%, price >= Rs5
+      var clean = results.filter(function(r){
+        return r.ltp>=5 && r.vol>=0.5 && r.vol<=8 && r.posPct>=0 && r.posPct<=100;
+      });
+      clean.sort(function(a,b){ return b.score-a.score; });
+      SCR_RESULTS = clean;
+      var removed = results.length - clean.length;
+      var show = clean.slice(0, 200);
+      var html2 = '<div class="card"><h3>' + (cancelled? "⏹ Partial · ":"") + 'AIM Candidates — Best to Least (' + clean.length + ' valid, ' + removed + ' anomalies removed)</h3>'
+        + '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="small" onclick="downloadScreenerCSV()">⬇ CSV (all ' + clean.length + ')</button>'
+        + '<button class="small sec" onclick="downloadScreenerPDF()">⬇ PDF (top 200)</button></div>'
+        + '<table><tr><th>#</th><th>Stock</th><th>LTP</th><th>vs 52wk</th><th>Vol</th><th>Score</th></tr>';
+      for(var i=0;i<show.length;i++){
+        var r = show[i];
         var posCls = r.posPct<40 ? "green" : (r.posPct>70 ? "red":"");
         html2 += '<tr><td>' + (i+1) + '</td><td><strong>' + r.sym + '</strong></td><td>' + inr(r.ltp) + '</td>'
           + '<td class="' + posCls + '">' + Math.round(r.posPct) + '%</td>'
           + '<td>' + r.vol.toFixed(1) + '</td>'
           + '<td><strong>' + Math.round(r.score) + '</strong></td></tr>';
       }
-      html2 += '</table><div class="muted">"vs 52wk": 0% = at yearly low, 100% = at yearly high. Vol = avg daily move. Score favours low position + high volatility — ideal AIM entries. Backtest any candidate before investing.</div></div>';
+      html2 += '</table><div class="muted">Sorted best to least by AIM score (low in 52wk range + healthy volatility). Showing top 200 — CSV has all. Filters removed ETFs, data glitches and sub-₹5 stocks. Backtest before investing.</div></div>';
       el.innerHTML = html2;
     }
 
