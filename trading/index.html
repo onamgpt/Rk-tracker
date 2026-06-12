@@ -75,6 +75,18 @@ h4{font-size:13px;margin:12px 0 6px;color:var(--blue)}
     <h3>Holdings</h3>
     <div id="holdings-list"></div>
     <button class="sec" onclick="document.getElementById('add-form').style.display='block'">+ Add Holding</button>
+    <button class="sec" onclick="document.getElementById('trade-form').style.display='block'" style="margin-top:6px">✏️ Record Manual Trade</button>
+    <div id="trade-form" style="display:none;margin-top:10px;background:#1c2940;padding:12px;border-radius:10px">
+      <div style="font-size:13px;color:#e8c468;font-weight:700;margin-bottom:8px">Record a trade you already executed in Zerodha</div>
+      <div class="field"><label>NSE Symbol</label><input id="t-sym" placeholder="ARVINDFASN" autocapitalize="characters"></div>
+      <div class="grid2">
+        <div class="field"><label>Action</label><select id="t-action"><option value="SELL">SELL</option><option value="BUY">BUY</option></select></div>
+        <div class="field"><label>Shares</label><input id="t-shares" type="number" placeholder="13"></div>
+      </div>
+      <div class="field"><label>Price executed at ₹</label><input id="t-price" type="number" placeholder="350"></div>
+      <button onclick="recordManualTrade()">✅ Update Portfolio</button>
+      <button class="sec" onclick="document.getElementById('trade-form').style.display='none'" style="margin-top:6px">Cancel</button>
+    </div>
     <div id="add-form" style="display:none;margin-top:10px">
       <div class="field"><label>NSE Symbol (e.g. SHK, VEDL, RELIANCE)</label><input id="h-sym" placeholder="SHK" autocapitalize="characters"></div>
       <div class="grid2">
@@ -597,6 +609,26 @@ function downloadAIMReport(){
   }).catch(function(){});
 }
 
+
+
+// ───────────────────────── RECORD MANUAL TRADE ─────────────────────────
+function recordManualTrade(){
+  var sym    = document.getElementById("t-sym").value.trim().toUpperCase();
+  var action = document.getElementById("t-action").value;
+  var shares = parseInt(document.getElementById("t-shares").value)||0;
+  var price  = parseFloat(document.getElementById("t-price").value)||0;
+  if(!sym||shares<=0||price<=0){ alert("Fill all fields"); return; }
+  var found = false;
+  for(var i=0;i<S.holdings.length;i++){
+    if(S.holdings[i].sym===sym){ found=true; break; }
+  }
+  if(!found){ alert(sym+" not found in portfolio. Add it first via + Add Holding."); return; }
+  applyTradeLocally(sym, action, shares, price);
+  document.getElementById("trade-form").style.display="none";
+  document.getElementById("t-sym").value="";
+  document.getElementById("t-shares").value="";
+  document.getElementById("t-price").value="";
+}
 
 // ───────────────────────── AUTO PORTFOLIO UPDATE AFTER TRADE ─────────────────────────
 // Updates: share qty, weighted avg (buys), cash pool, AIM Portfolio Control
