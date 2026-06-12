@@ -155,6 +155,12 @@ exports.handler = async (event) => {
       return {statusCode:200, headers:h, body:JSON.stringify({symbols:syms, count:syms.length})};
     }
 
+    // Today's order book (to auto-apply executed trades)
+    if (action === "orders") {
+      var rawOrders = await kiteGet("/orders", body.access_token);
+      return {statusCode:200, headers:h, body:rawOrders};
+    }
+
     return {statusCode:400, headers:h, body:JSON.stringify({error:"Unknown action"})};
   } catch(e) {
     return {statusCode:500, headers:h, body:JSON.stringify({error:e.message})};
