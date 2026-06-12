@@ -33,6 +33,30 @@ exports.handler = async (event) => {
     } else if (action === "history") {
       var range = p.range || "2y";
       url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=1d&range=" + range;
+    } else if (action === "uslist") {
+      // Official NASDAQ + NYSE/AMEX symbol directories — every listed US stock
+      var nasdaqRaw = await fetchUrl("https://www.nasdaqtrader.com/dynamic/symdir/nasdaqlisted.txt");
+      var otherRaw  = await fetchUrl("https://www.nasdaqtrader.com/dynamic/symdir/otherlisted.txt");
+      var syms = [];
+      nasdaqRaw.split("\n").forEach(function(line, i){
+        if (i === 0) return;
+        var c = line.split("|");
+        // Symbol|Security Name|Market Category|Test Issue|Financial Status|Round Lot|ETF|NextShares
+        if (c.length > 6 && c[3] === "N" && c[6] === "N") {
+          var s = c[0].trim();
+          if (s && s.indexOf(".") === -1 && s.indexOf("$") === -1 && s.length <= 5) syms.push(s);
+        }
+      });
+      otherRaw.split("\n").forEach(function(line, i){
+        if (i === 0) return;
+        var c = line.split("|");
+        // ACT Symbol|Security Name|Exchange|CQS Symbol|ETF|Round Lot|Test Issue|NASDAQ Symbol
+        if (c.length > 6 && c[4] === "N" && c[6] === "N") {
+          var s = c[0].trim();
+          if (s && s.indexOf(".") === -1 && s.indexOf("$") === -1 && s.length <= 5) syms.push(s);
+        }
+      });
+      return {statusCode:200, headers:h, body:JSON.stringify({symbols:syms, count:syms.length})};
     } else {
       return {statusCode:400, headers:h, body:JSON.stringify({error:"bad action"})};
     }
