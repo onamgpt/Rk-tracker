@@ -126,10 +126,11 @@ h4{font-size:13px;margin:12px 0 6px;color:var(--blue)}
   <div class="card">
     <h3>Zerodha Kite API</h3>
     <div class="field"><label>Client ID</label><input id="set-client" value="FS0303"></div>
-    <div class="field"><label>API Key (paste when ready)</label><input id="set-key" placeholder="from kite.trade"></div>
-    <div class="field"><label>API Secret</label><input id="set-secret" type="password" placeholder="from kite.trade"></div>
-    <button class="sec" onclick="saveSettings()">Save Settings</button>
-    <div class="muted">Once keys are added, live portfolio import from Zerodha will be enabled. Until then prices come from NSE via Yahoo Finance.</div>
+    <div class="muted">API key and secret are securely stored in Netlify — never exposed here.</div>
+    <div id="kite-status" class="status" style="margin-top:8px">Not connected to Zerodha</div>
+    <button onclick="kiteLogin()">🔐 Connect Zerodha Account</button>
+    <button class="sec" onclick="importKiteHoldings()">📥 Import Holdings from Zerodha</button>
+    <div class="muted" style="margin-top:6px">Tap Connect once per day (Kite sessions expire daily). After connecting, tap Import to sync your actual holdings automatically.</div>
   </div>
   <div class="card">
     <h3>Daily Telegram Report</h3>
@@ -545,6 +546,94 @@ function saveSettings(){
   S.settings.trigger = parseFloat(document.getElementById("set-trigger").value)||5;
   save(S);
   alert("✅ Settings saved");
+}
+
+
+// ───────────────────────── KITE API ─────────────────────────
+function kiteLogin(){
+  fetch("/.netlify/functions/kite", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({action:"loginUrl"})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.url){
+      // Open Zerodha login — after login Zerodha redirects back with request_token
+      window.open(d.url, "_blank");
+      document.getElementById("kite-status").textContent = "✅ Login opened — after Zerodha login, paste the request_token from the redirect URL below";
+      // Show token input
+      var inp = document.createElement("input");
+      inp.id = "kite-token-input";
+      inp.placeholder = "Paste request_token from redirect URL";
+      inp.style.marginTop = "8px";
+      var btn = document.createElement("button");
+      btn.textContent = "✅ Submit Token";
+      btn.style.marginTop = "6px";
+      btn.className = "sec";
+      btn.onclick = function(){
+        var tok = document.getElementById("kite-token-input").value.trim();
+        if(!tok){alert("Paste token first");return;}
+        exchangeToken(tok);
+      };
+      var card = document.getElementById("kite-status").parentNode;
+      card.appendChild(inp);
+      card.appendChild(btn);
+    }
+  }).catch(function(e){ alert("Error: "+e.message); });
+}
+
+function exchangeToken(requestToken){
+  document.getElementById("kite-status").textContent = "🔄 Exchanging token...";
+  fetch("/.netlify/functions/kite", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({action:"getToken", request_token:requestToken})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.data && d.data.access_token){
+      S.settings.kiteToken = d.data.access_token;
+      S.settings.kiteConnected = new Date().toISOString();
+      save(S);
+      document.getElementById("kite-status").textContent = "✅ Connected to Zerodha! Token valid for today.";
+    } else {
+      document.getElementById("kite-status").textContent = "❌ Failed: " + (d.message||JSON.stringify(d));
+    }
+  }).catch(function(e){
+    document.getElementById("kite-status").textContent = "❌ Error: "+e.message;
+  });
+}
+
+function importKiteHoldings(){
+  var token = S.settings.kiteToken;
+  if(!token){ alert("Connect Zerodha first"); return; }
+  document.getElementById("kite-status").textContent = "📥 Importing holdings from Zerodha...";
+  fetch("/.netlify/functions/kite", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({action:"holdings", access_token:token})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(!d.data){ document.getElementById("kite-status").textContent = "❌ " + (d.message||"Failed"); return; }
+    var imported = 0;
+    d.data.forEach(function(h){
+      if(!h.tradingsymbol || h.quantity<=0) return;
+      var sym = h.tradingsymbol;
+      var found = false;
+      for(var i=0;i<S.holdings.length;i++){
+        if(S.holdings[i].sym===sym){
+          S.holdings[i].qty = h.quantity;
+          S.holdings[i].avg = h.average_price;
+          S.holdings[i].pc = S.holdings[i].pc || h.average_price * h.quantity;
+          found = true;
+        }
+      }
+      if(!found){
+        S.holdings.push({sym:sym, qty:h.quantity, avg:h.average_price, pc:h.average_price*h.quantity});
+      }
+      S.prices[sym] = h.last_price;
+      imported++;
+    });
+    save(S);
+    renderHoldings();
+    document.getElementById("kite-status").textContent = "✅ Imported " + imported + " holdings from Zerodha";
+    showPage("portfolio");
+  }).catch(function(e){
+    document.getElementById("kite-status").textContent = "❌ " + e.message;
+  });
 }
 
 // ───────────────────────── INIT ─────────────────────────
