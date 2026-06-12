@@ -10,7 +10,7 @@ exports.handler = async (event) => {
   };
   if (event.httpMethod === "OPTIONS") return {statusCode:200,headers:h,body:""};
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwNyTPPcvn5KNT2frDGWF77KoNxVWAWg-mSoZqXYNq7C5GclEoGRG4yDn_BRaABA8gwzg/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXP_nY13AqlYyif6Kf3rFRayQ_hzOsbisAxe_hT1bd8qkF5wcoJ5qI9dLtMbOTTd4uDg/exec";
 
   function makeGet(targetUrl) {
     return new Promise(function(resolve, reject) {
