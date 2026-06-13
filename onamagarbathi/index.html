@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onam Agarbathi — Fragrance Since 1922</title>
+<meta name="description" content="India's most trusted incense brand since 1922. Premium agarbathi for prayer, meditation and home. Shop Vaishak, Onam, devotional and lifestyle incense sticks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#C9A84C;
+  --gold-light:#E8D5A0;
+  --gold-dark:#8B6914;
+  --ink:#1A1208;
+  --smoke:#F7F4EE;
+  --ash:#E8E3D9;
+  --ember:#8B2A0F;
+  --white:#FFFFFF;
+  --text-body:#3D3526;
+  --text-muted:#7A6E5A;
+  --nav-h:72px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--smoke);color:var(--text-body);overflow-x:hidden}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--nav-h);background:rgba(26,18,8,0.96);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;padding:0 5vw;border-bottom:1px solid rgba(201,168,76,0.2)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-logo-text{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:0.08em}
+.nav-logo-sub{font-size:0.6rem;color:var(--gold-light);letter-spacing:0.2em;text-transform:uppercase;display:block;margin-top:2px}
+.nav-links{display:flex;gap:32px;list-style:none}
+.nav-links a{color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.85rem;letter-spacing:0.05em;transition:color 0.2s}
+.nav-links a:hover{color:var(--gold)}
+.nav-cart{position:relative;cursor:pointer;color:var(--gold);display:flex;align-items:center;gap:8px;font-size:0.85rem;font-weight:500;border:1px solid var(--gold);border-radius:4px;padding:8px 16px;transition:all 0.2s}
+.nav-cart:hover{background:var(--gold);color:var(--ink)}
+.cart-count{background:var(--ember);color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{width:24px;height:2px;background:var(--gold);display:block;transition:all 0.3s}
+
+/* HERO */
+.hero{min-height:100vh;background:linear-gradient(135deg,#0D0A04 0%,#1A1208 40%,#2A1A08 70%,#1A0E04 100%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding-top:var(--nav-h)}
+.hero-bg-pattern{position:absolute;inset:0;opacity:0.04;background-image:repeating-linear-gradient(45deg,var(--gold) 0,var(--gold) 1px,transparent 0,transparent 50%);background-size:20px 20px}
+.hero-smoke{position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top,rgba(201,168,76,0.05),transparent);pointer-events:none}
+.hero-content{text-align:center;z-index:2;padding:40px 5vw;max-width:800px}
+.hero-eyebrow{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.35em;color:var(--gold);text-transform:uppercase;margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:16px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:1;max-width:60px;height:1px;background:var(--gold);opacity:0.5}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,7vw,5.5rem);color:var(--white);line-height:1.1;margin-bottom:8px}
+.hero-title em{color:var(--gold);font-style:italic}
+.hero-subtitle{font-family:'Playfair Display',serif;font-size:clamp(1rem,2.5vw,1.4rem);color:var(--gold-light);font-weight:400;margin-bottom:24px;letter-spacing:0.05em}
+.hero-desc{color:rgba(255,255,255,0.55);font-size:0.95rem;line-height:1.8;max-width:520px;margin:0 auto 40px;font-weight:300}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{background:var(--gold);color:var(--ink);padding:14px 32px;font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:0.15em;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all 0.3s;font-weight:600}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-2px)}
+.btn-outline{background:transparent;color:var(--gold);padding:14px 32px;font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:0.15em;border:1px solid var(--gold);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:all 0.3s}
+.btn-outline:hover{background:rgba(201,168,76,0.1)}
+.hero-stats{display:flex;justify-content:center;gap:48px;margin-top:64px;padding-top:48px;border-top:1px solid rgba(201,168,76,0.15)}
+.stat{text-align:center}
+.stat-num{font-family:'Cinzel',serif;font-size:1.8rem;color:var(--gold);display:block}
+.stat-label{font-size:0.7rem;color:rgba(255,255,255,0.4);letter-spacing:0.12em;text-transform:uppercase;margin-top:4px}
+
+/* HERITAGE */
+.heritage{background:var(--ink);padding:100px 5vw;position:relative;overflow:hidden}
+.heritage::before{content:'1922';position:absolute;right:-2%;top:50%;transform:translateY(-50%);font-family:'Cinzel',serif;font-size:18vw;color:rgba(201,168,76,0.04);line-height:1;pointer-events:none}
+.heritage-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.heritage-text .section-eyebrow{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.3em;color:var(--gold);text-transform:uppercase;margin-bottom:20px}
+.heritage-text h2{font-family:'Playfair Display',serif;font-size:clamp(2rem,4vw,3rem);color:var(--white);line-height:1.2;margin-bottom:24px}
+.heritage-text h2 em{color:var(--gold);font-style:italic}
+.heritage-text p{color:rgba(255,255,255,0.6);line-height:1.9;font-size:0.95rem;margin-bottom:16px;font-weight:300}
+.timeline{display:flex;flex-direction:column;gap:0}
+.timeline-item{display:flex;gap:20px;padding:20px 0;border-bottom:1px solid rgba(201,168,76,0.1)}
+.timeline-item:last-child{border-bottom:none}
+.timeline-year{font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);min-width:50px;padding-top:3px}
+.timeline-text{color:rgba(255,255,255,0.6);font-size:0.85rem;line-height:1.6;font-weight:300}
+.timeline-text strong{color:var(--gold-light);display:block;margin-bottom:4px;font-weight:500}
+
+/* AWARDS STRIP */
+.awards-strip{background:var(--gold);padding:20px 5vw;overflow:hidden}
+.awards-inner{display:flex;gap:60px;align-items:center;justify-content:center;flex-wrap:wrap}
+.award-item{display:flex;align-items:center;gap:10px;color:var(--ink)}
+.award-icon{font-size:1.2rem}
+.award-text{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.1em;font-weight:600}
+
+/* SHOP SECTION */
+.shop{padding:100px 5vw;background:var(--smoke)}
+.section-header{text-align:center;margin-bottom:64px}
+.section-eyebrow{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.3em;color:var(--gold-dark);text-transform:uppercase;margin-bottom:16px}
+.section-title{font-family:'Playfair Display',serif;font-size:clamp(2rem,4vw,3rem);color:var(--ink);line-height:1.2}
+.section-title em{color:var(--ember);font-style:italic}
+.section-desc{color:var(--text-muted);font-size:0.95rem;line-height:1.7;max-width:520px;margin:16px auto 0;font-weight:300}
+
+/* CATEGORY TABS */
+.cat-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:48px;flex-wrap:wrap}
+.cat-tab{padding:10px 24px;border:1px solid var(--ash);background:white;color:var(--text-muted);font-size:0.8rem;font-family:'Cinzel',serif;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;border-radius:2px}
+.cat-tab.active,.cat-tab:hover{background:var(--ink);color:var(--gold);border-color:var(--ink)}
+
+/* PRODUCT GRID */
+.product-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:28px}
+.product-card{background:white;border:1px solid var(--ash);transition:all 0.3s;position:relative;overflow:hidden}
+.product-card:hover{transform:translateY(-4px);box-shadow:0 20px 60px rgba(26,18,8,0.12);border-color:var(--gold)}
+.product-badge{position:absolute;top:12px;left:12px;z-index:2;background:var(--ember);color:white;font-size:0.6rem;font-family:'Cinzel',serif;letter-spacing:0.12em;padding:4px 10px;text-transform:uppercase}
+.product-img-wrap{height:240px;overflow:hidden;background:var(--ash);display:flex;align-items:center;justify-content:center;position:relative}
+.product-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform 0.4s}
+.product-card:hover .product-img-wrap img{transform:scale(1.05)}
+.product-img-placeholder{font-size:3rem;opacity:0.3}
+.product-body{padding:20px}
+.product-brand{font-size:0.6rem;font-family:'Cinzel',serif;letter-spacing:0.2em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.product-name{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--ink);margin-bottom:6px;line-height:1.3}
+.product-desc{font-size:0.78rem;color:var(--text-muted);line-height:1.6;margin-bottom:16px;font-weight:300}
+.product-footer{display:flex;align-items:center;justify-content:space-between}
+.product-price{display:flex;flex-direction:column}
+.price-mrp{font-size:0.65rem;color:var(--text-muted);text-decoration:line-through}
+.price-sell{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--ink);font-weight:600}
+.price-tbd{font-size:0.75rem;color:var(--text-muted);font-style:italic}
+.btn-add{background:var(--ink);color:var(--gold);border:none;padding:10px 18px;font-size:0.7rem;font-family:'Cinzel',serif;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s}
+.btn-add:hover{background:var(--gold);color:var(--ink)}
+
+/* CART DRAWER */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;opacity:0;pointer-events:none;transition:opacity 0.3s}
+.cart-overlay.open{opacity:1;pointer-events:all}
+.cart-drawer{position:fixed;right:0;top:0;bottom:0;width:min(420px,100vw);background:white;z-index:2001;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column}
+.cart-drawer.open{transform:translateX(0)}
+.cart-header{padding:24px;border-bottom:1px solid var(--ash);display:flex;justify-content:space-between;align-items:center}
+.cart-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--ink);letter-spacing:0.1em}
+.cart-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-muted);line-height:1}
+.cart-items{flex:1;overflow-y:auto;padding:16px 24px}
+.cart-empty{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.cart-empty-icon{font-size:3rem;margin-bottom:16px;display:block}
+.cart-empty p{font-size:0.9rem}
+.cart-item{display:flex;gap:12px;padding:16px 0;border-bottom:1px solid var(--ash)}
+.cart-item-img{width:60px;height:60px;object-fit:cover;background:var(--ash)}
+.cart-item-details{flex:1}
+.cart-item-name{font-size:0.85rem;font-weight:500;color:var(--ink);margin-bottom:4px}
+.cart-item-brand{font-size:0.7rem;color:var(--text-muted)}
+.cart-item-price{font-family:'Cinzel',serif;font-size:0.9rem;color:var(--ink);margin-top:4px}
+.cart-item-qty{display:flex;align-items:center;gap:8px;margin-top:8px}
+.qty-btn{background:var(--ash);border:none;width:24px;height:24px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+.qty-btn:hover{background:var(--gold)}
+.qty-num{font-size:0.85rem;min-width:20px;text-align:center}
+.cart-item-remove{color:var(--text-muted);background:none;border:none;cursor:pointer;font-size:0.75rem;margin-left:auto;padding:4px}
+.cart-item-remove:hover{color:var(--ember)}
+.cart-footer{padding:24px;border-top:1px solid var(--ash)}
+.cart-subtotal{display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem}
+.cart-subtotal span:last-child{font-family:'Cinzel',serif;font-weight:600}
+.cart-shipping-note{font-size:0.72rem;color:var(--text-muted);margin-bottom:20px;text-align:center}
+.btn-checkout{width:100%;background:var(--ink);color:var(--gold);border:none;padding:16px;font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:0.15em;cursor:pointer;transition:all 0.2s}
+.btn-checkout:hover{background:var(--gold);color:var(--ink)}
+.btn-checkout:disabled{opacity:0.5;cursor:not-allowed}
+
+/* CONTACT */
+.contact{background:var(--ink);padding:80px 5vw}
+.contact-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
+.contact-info h2{font-family:'Playfair Display',serif;font-size:2rem;color:var(--white);margin-bottom:24px}
+.contact-info h2 em{color:var(--gold);font-style:italic}
+.contact-detail{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start}
+.contact-icon{color:var(--gold);font-size:1.1rem;margin-top:2px;min-width:20px}
+.contact-text{color:rgba(255,255,255,0.65);font-size:0.88rem;line-height:1.6}
+.contact-text strong{color:var(--gold-light);display:block;font-size:0.72rem;font-family:'Cinzel',serif;letter-spacing:0.12em;margin-bottom:3px}
+
+/* FOOTER */
+footer{background:#0A0704;padding:40px 5vw;text-align:center;border-top:1px solid rgba(201,168,76,0.1)}
+.footer-logo{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);letter-spacing:0.12em;margin-bottom:16px}
+.footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:24px}
+.footer-links a{color:rgba(255,255,255,0.4);text-decoration:none;font-size:0.75rem;letter-spacing:0.08em;transition:color 0.2s}
+.footer-links a:hover{color:var(--gold)}
+.footer-copy{color:rgba(255,255,255,0.2);font-size:0.72rem;letter-spacing:0.08em}
+.gstin{font-size:0.65rem;color:rgba(255,255,255,0.15);margin-top:8px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--gold);padding:12px 24px;font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.1em;z-index:9999;border:1px solid rgba(201,168,76,0.3);transition:transform 0.3s;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* HIDDEN CLASS */
+.hidden{display:none!important}
+
+/* MOBILE */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .nav-links.mobile-open{display:flex;flex-direction:column;position:fixed;top:var(--nav-h);left:0;right:0;background:var(--ink);padding:20px 5vw;gap:20px;border-top:1px solid rgba(201,168,76,0.15)}
+  .hero-stats{gap:24px}
+  .heritage-inner{grid-template-columns:1fr;gap:40px}
+  .contact-inner{grid-template-columns:1fr;gap:40px}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+  .product-img-wrap{height:180px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div>
+      <span class="nav-logo-text">Onam</span>
+      <span class="nav-logo-sub">Agarbathi Pvt. Ltd. · Since 1972</span>
+    </div>
+  </a>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#shop">Shop</a></li>
+    <li><a href="#heritage">Our Story</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="nav-cart" onclick="toggleCart()">
+      🛒 Cart <span class="cart-count" id="cartCount">0</span>
+    </div>
+    <div class="hamburger" onclick="toggleMobileMenu()" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg-pattern"></div>
+  <div class="hero-smoke"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Fragrance by Onam</div>
+    <h1 class="hero-title">A Century of<br><em>Sacred Fragrance</em></h1>
+    <p class="hero-subtitle">Bangalore's Most Trusted Incense — Since 1922</p>
+    <p class="hero-desc">Born in a family workshop over 100 years ago, Onam Agarbathi carries the soul of devotion in every stick. From the iconic Vaishak brand to modern aromatherapy — pure fragrance, made with reverence.</p>
+    <div class="hero-ctas">
+      <a href="#shop" class="btn-primary">Shop Now ↓</a>
+      <a href="#heritage" class="btn-outline">Our Story</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num">100+</span><span class="stat-label">Years Heritage</span></div>
+      <div class="stat"><span class="stat-num">30+</span><span class="stat-label">Fragrances</span></div>
+      <div class="stat"><span class="stat-num">3</span><span class="stat-label">National Awards</span></div>
+      <div class="stat"><span class="stat-num">1972</span><span class="stat-label">Est. as Onam</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- AWARDS STRIP -->
+<div class="awards-strip">
+  <div class="awards-inner">
+    <div class="award-item"><span class="award-icon">🏆</span><span class="award-text">Chaitra — National Packaging Award</span></div>
+    <div class="award-item"><span class="award-icon">🏆</span><span class="award-text">Zoon — Kashmir Houseboat Innovation</span></div>
+    <div class="award-item"><span class="award-icon">🏆</span><span class="award-text">Thaipusam — Temple Design Award</span></div>
+  </div>
+</div>
+
+<!-- HERITAGE -->
+<section class="heritage" id="heritage">
+  <div class="heritage-inner">
+    <div class="heritage-text">
+      <div class="section-eyebrow">Our Story</div>
+      <h2>A Legacy Lit by<br><em>Devotion</em></h2>
+      <p>What began in 1922 as National Flag Perfumery Works — a small family enterprise in Bangalore — grew into one of India's most celebrated incense houses over the next hundred years.</p>
+      <p>In 1972, a new chapter opened: Onam Agarbathi Pvt. Ltd. was born, and with it came the <strong>Vaishak brand</strong> — a name that would become synonymous with quality, innovation, and the daily ritual of prayer across the subcontinent.</p>
+      <p>Three national packaging awards for transformable box innovations — a prayer chariot, a Kashmiri houseboat, a temple structure — cemented Onam's reputation not just as fragrance makers, but as craftspeople who honour the sacred with every design.</p>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <span class="timeline-year">1922</span>
+        <div class="timeline-text"><strong>National Flag Perfumery Works founded</strong>Great-grandfather establishes the family fragrance workshop in Bangalore</div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">1972</span>
+        <div class="timeline-text"><strong>Onam Agarbathi Pvt. Ltd. established</strong>New company launched, Vaishak brand introduced — becomes a top national incense name</div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">1980s</span>
+        <div class="timeline-text"><strong>Innovation era begins</strong>Chaitra box wins national packaging award — folds into a functional prayer chariot with lamp holder</div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">1990s</span>
+        <div class="timeline-text"><strong>Zoon & Thaipusam awards</strong>Kashmiri houseboat pack and intricate temple structure created for Malaysian market both win national recognition</div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-year">2022</span>
+        <div class="timeline-text"><strong>Golden Jubilee</strong>50 years of Onam Agarbathi celebrated with the Golden Jubilee collection</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOP -->
+<section class="shop" id="shop">
+  <div class="section-header">
+    <div class="section-eyebrow">Our Collection</div>
+    <h2 class="section-title">Pure Fragrance,<br><em>Every Ritual</em></h2>
+    <p class="section-desc">From premium lifestyle incense to devotional pouches for every faith — choose the fragrance that speaks to your prayer.</p>
+  </div>
+
+  <div class="cat-tabs">
+    <button class="cat-tab active" onclick="filterCat('all',this)">All Products</button>
+    <button class="cat-tab" onclick="filterCat('premium',this)">Premium Boxes</button>
+    <button class="cat-tab" onclick="filterCat('economy',this)">Value Packs</button>
+    <button class="cat-tab" onclick="filterCat('hindu',this)">Hindu Devotional</button>
+    <button class="cat-tab" onclick="filterCat('christian',this)">Christian Devotional</button>
+  </div>
+
+  <div class="product-grid" id="productGrid"></div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact">
+  <div class="contact-inner">
+    <div class="contact-info">
+      <h2>Get in <em>Touch</em></h2>
+      <div class="contact-detail">
+        <span class="contact-icon">📍</span>
+        <div class="contact-text">
+          <strong>Address</strong>
+          35/36, N.S Palya Road, Mahadeshwara Nagar,<br>BTM Layout 2nd Stage, Bengaluru — 560 076
+        </div>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-icon">📞</span>
+        <div class="contact-text">
+          <strong>Customer Care</strong>
+          +91 98455 63633
+        </div>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-icon">✉️</span>
+        <div class="contact-text">
+          <strong>Email</strong>
+          customercare@onamagarbathi.com
+        </div>
+      </div>
+      <div class="contact-detail">
+        <span class="contact-icon">🏭</span>
+        <div class="contact-text">
+          <strong>GSTIN</strong>
+          29AAACO2213Q1Z8
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-eyebrow" style="color:var(--gold);margin-bottom:20px">Wholesale Enquiries</div>
+      <p style="color:rgba(255,255,255,0.55);font-size:0.88rem;line-height:1.8;margin-bottom:20px">For bulk orders, export enquiries, or distributor partnerships — reach out to us directly. We supply across India and export to UAE, Malaysia, and beyond.</p>
+      <a href="https://wa.me/919845563633" target="_blank" class="btn-primary" style="text-decoration:none;display:inline-flex">
+        💬 WhatsApp Us
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Onam Agarbathi Pvt. Ltd.</div>
+  <div class="footer-links">
+    <a href="#shop">Shop</a>
+    <a href="#heritage">Our Story</a>
+    <a href="#contact">Contact</a>
+    <a href="https://wa.me/919845563633">WhatsApp</a>
+  </div>
+  <div class="footer-copy">© 2025 Onam Agarbathi Private Limited · Bangalore · All Rights Reserved</div>
+  <div class="gstin">GSTIN: 29AAACO2213Q1Z8 · Fragrance Since 1922</div>
+</footer>
+
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-header">
+    <span class="cart-title">Your Cart</span>
+    <button class="cart-close" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div class="cart-empty">
+      <span class="cart-empty-icon">🪔</span>
+      <p>Your cart is empty.<br>Add some fragrance to begin.</p>
+    </div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span id="cartTotal">₹0</span>
+    </div>
+    <p class="cart-shipping-note">Shipping calculated at checkout · Free above ₹499</p>
+    <button class="btn-checkout" id="checkoutBtn" onclick="startCheckout()">Proceed to Pay →</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── PRODUCT DATA ───────────────────────────────────────────────────────────
+var PRODUCTS = [
+  // PREMIUM BOXES
+  {id:'vaishak',name:'Vaishak Special',brand:'Vaishak by Onam',cat:'premium',mrp:null,price:null,desc:'The iconic flagship fragrance. Rich floral blend that defined a generation of prayer.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-17_at_15_32.55_833f2777',badge:'Flagship'},
+  {id:'golden-buddha',name:'Golden Buddha',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Divine incense for meditation and peace. Deep, golden sandalwood notes.',img:'/mnt/user-data/uploads/Copy_of_WhatsApp_Image_2024-07-17_at_15_31.38_44cb6585'},
+  {id:'ganesh-flora',name:'Ganesh Flora',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Fresh floral fragrance inspired by temple gardens. Ideal for daily puja.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-17_at_15_30.35_a2155c82'},
+  {id:'scentsational',name:"Scentsational",brand:"Onam's",cat:'premium',mrp:null,price:null,desc:'A bold, modern fragrance for the contemporary home. Long-lasting aroma.',img:'/mnt/user-data/uploads/Seentsational_Onam_Agarabathi_Amezone_Posts_01-10-2024_3.jpeg'},
+  {id:'lavender',name:'Lavender Premium',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Calming lavender for sleep, meditation and stress relief. 100g premium pack.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-17_at_15_35.13_11ad1fee',badge:'50 Yrs Golden Jubilee'},
+  {id:'citronella',name:'Citronella',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Refreshing citronella fragrance. Also acts as a natural mosquito repellent.',img:'/mnt/user-data/uploads/_Citronella_Incense_Sticks_1.png',badge:'50 Yrs Golden Jubilee'},
+  {id:'vismaya-rose',name:'Vismaya Rose',brand:'Onam Vismaya',cat:'premium',mrp:null,price:null,desc:'A rose garden in full bloom. Premium romantic fragrance for your home.',img:'/mnt/user-data/uploads/Vismaya_Incense_sticks_3.png'},
+  {id:'serenity',name:'Serenity',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Serene lotus and moon notes for deep meditation and tranquil prayer.',img:'/mnt/user-data/uploads/Serinity_Incense_Sticks_2.png'},
+  {id:'sugandha-pooja',name:'Sugandha Pooja',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Pure premium incense crafted specifically for puja rituals. Earthy and sacred.',img:'/mnt/user-data/uploads/SUGANDHA_POOJA__3.png'},
+  {id:'ocean',name:'Ocean',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Fresh oceanic fragrance. Pure and invigorating — ideal for aromatherapy.',img:'/mnt/user-data/uploads/Ocean_Incense_Sticks_2.png'},
+  {id:'suprasandal',name:'Suprasandal',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'Pure sandalwood fragrance. Classic, divine and deeply meditative.',img:'/mnt/user-data/uploads/super_sandl_2.png'},
+  {id:'black-gem',name:'Black Gem',brand:'Onam',cat:'premium',mrp:null,price:null,desc:'A bold, mysterious fragrance with woody and musky notes. Premium experience.',img:'/mnt/user-data/uploads/black_gem_3.png'},
+  {id:'surabhi',name:'Surabhi',brand:"Onam's",cat:'premium',mrp:null,price:null,desc:'Artistic floral fusion. Contemporary design meets traditional fragrance craft.',img:'/mnt/user-data/uploads/Surabhi_Onam_Agarabathi_Amezone_Posts_01-10-2024_3.jpeg'},
+
+  // ECONOMY
+  {id:'onam-100',name:'Onam 100 Sticks',brand:'Onam',cat:'economy',mrp:null,price:null,desc:'The original Onam incense. 100 sticks of classic fragrance — best everyday value.',img:'/mnt/user-data/uploads/onam_1_.png',badge:'Value Pack'},
+
+  // HINDU DEVOTIONAL
+  {id:'ganga-mata',name:'Ganga Mata',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'Blessed fragrance for Ganga puja. 20 sticks with sacred energy.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-17_at_11_23.17_3aaea937'},
+  {id:'panchamukhi-hanuman',name:'Panchamukhi Hanuman',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'For strength, protection and devotion to Lord Hanuman. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-17_at_11_24.11_b7c943ac'},
+  {id:'ganesh',name:'Ganesh',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'Begin every ritual with Lord Ganesha\'s blessing. Mogra fragrance. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-12_at_17_29.20_b0f650cc'},
+  {id:'money-drawing',name:'Money Drawing',brand:'Onam Exotic',cat:'hindu',mrp:null,price:null,desc:'Exotic incense for abundance and prosperity. 20 sticks per pouch.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-17_at_11_23.45_32e72f9b'},
+  {id:'krishna',name:'Krishna',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'Fragrance of devotion and divine love. For Lord Krishna puja. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-11_at_17_28.08_e8d4d11a'},
+  {id:'shiva',name:'Shiva',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'Sacred fragrance for Lord Shiva\'s puja. Deep and meditative. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-11_at_17_28.20_a87c64da'},
+  {id:'saraswathi',name:'Saraswathi',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'For wisdom, learning and divine grace. Goddess Saraswathi puja. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-10_at_12_28.00_dbec92be'},
+  {id:'lakshmi',name:'Lakshmi',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'Invite abundance and blessings of Goddess Lakshmi. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-10_at_12_27.42_feef75af'},
+  {id:'jai-hanuman',name:'Jai Hanuman',brand:'Onam',cat:'hindu',mrp:null,price:null,desc:'Jai Hanuman — strength, courage and devotion in every stick. 20 sticks.',img:'/mnt/user-data/uploads/WhatsApp_Image_2024-07-10_at_12_27.27_4ae8736a'},
+
+  // CHRISTIAN
+  {id:'st-antony',name:'St. Antony — Prosperity',brand:'Onam',cat:'christian',mrp:null,price:null,desc:'For prosperity and blessings of St. Anthony of Padua. 20 sticks.',img:'/mnt/user-data/uploads/St__Antony_Incense_sticks3.png',badge:'Prosperity'},
+  {id:'st-joseph',name:'St. Joseph',brand:'Onam',cat:'christian',mrp:null,price:null,desc:'Protection from untimely death. For St. Joseph\'s intercession. 20 sticks.',img:'/mnt/user-data/uploads/joseph__3.png'},
+  {id:'st-jude',name:'St. Jude',brand:'Onam',cat:'christian',mrp:null,price:null,desc:'The patron of impossible causes. Powerful intercession. 20 sticks.',img:'/mnt/user-data/uploads/st__jude__2.png'},
+  {id:'lord-jesus',name:'Lord Jesus — Our Saviour',brand:'Onam',cat:'christian',mrp:null,price:null,desc:'Sacred incense for prayer to Our Lord Jesus Christ. 20 sticks.',img:'/mnt/user-data/uploads/lord_jesus_3.png'}
+];
+
+// ─── CART STATE ──────────────────────────────────────────────────────────────
+var cart = [];
+
+function getCartTotal(){
+  return cart.reduce(function(s,i){
+    return s + (i.price || 0) * i.qty;
+  },0);
+}
+
+function updateCartUI(){
+  var count = cart.reduce(function(s,i){return s+i.qty},0);
+  document.getElementById('cartCount').textContent = count;
+  var total = getCartTotal();
+  document.getElementById('cartTotal').textContent = 'Rs.' + total.toFixed(0);
+  var itemsEl = document.getElementById('cartItems');
+  if(cart.length === 0){
+    itemsEl.innerHTML = '<div class="cart-empty"><span class="cart-empty-icon">🪔</span><p>Your cart is empty.<br>Add some fragrance to begin.</p></div>';
+    return;
+  }
+  var html = '';
+  cart.forEach(function(item){
+    html += '<div class="cart-item">';
+    html += '<div style="width:60px;height:60px;background:var(--ash);overflow:hidden;flex-shrink:0"><img src="' + item.img + '" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'"></div>';
+    html += '<div class="cart-item-details">';
+    html += '<div class="cart-item-name">' + item.name + '</div>';
+    html += '<div class="cart-item-brand">' + item.brand + '</div>';
+    html += '<div class="cart-item-price">' + (item.price ? 'Rs.' + item.price : 'Price TBD') + '</div>';
+    html += '<div class="cart-item-qty">';
+    html += '<button class="qty-btn" onclick="changeQty(\'' + item.id + '\',-1)">−</button>';
+    html += '<span class="qty-num">' + item.qty + '</span>';
+    html += '<button class="qty-btn" onclick="changeQty(\'' + item.id + '\',1)">+</button>';
+    html += '<button class="cart-item-remove" onclick="removeItem(\'' + item.id + '\')">Remove</button>';
+    html += '</div></div></div>';
+  });
+  itemsEl.innerHTML = html;
+}
+
+function addToCart(id){
+  var product = PRODUCTS.find(function(p){return p.id === id});
+  if(!product) return;
+  var existing = cart.find(function(i){return i.id === id});
+  if(existing){
+    existing.qty++;
+  } else {
+    cart.push({id:product.id,name:product.name,brand:product.brand,price:product.price,img:product.img,qty:1});
+  }
+  updateCartUI();
+  showToast('Added: ' + product.name);
+}
+
+function changeQty(id, delta){
+  var item = cart.find(function(i){return i.id === id});
+  if(!item) return;
+  item.qty += delta;
+  if(item.qty <= 0) cart = cart.filter(function(i){return i.id !== id});
+  updateCartUI();
+}
+
+function removeItem(id){
+  cart = cart.filter(function(i){return i.id !== id});
+  updateCartUI();
+}
+
+function toggleCart(){
+  var overlay = document.getElementById('cartOverlay');
+  var drawer = document.getElementById('cartDrawer');
+  var isOpen = drawer.classList.contains('open');
+  if(isOpen){
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+  } else {
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+    updateCartUI();
+  }
+}
+
+// ─── CHECKOUT ────────────────────────────────────────────────────────────────
+function startCheckout(){
+  if(cart.length === 0) return;
+  var hasTBD = cart.some(function(i){return !i.price});
+  if(hasTBD){
+    showToast('Prices updating soon — call us to order!');
+    setTimeout(function(){window.open('https://wa.me/919845563633','_blank')},1500);
+    return;
+  }
+  var total = getCartTotal();
+  var options = {
+    key: 'rzp_live_placeholder',
+    amount: total * 100,
+    currency: 'INR',
+    name: 'Onam Agarbathi',
+    description: 'Incense Order',
+    image: '',
+    handler: function(resp){
+      showToast('Order confirmed! Thank you 🙏');
+      cart = [];
+      updateCartUI();
+      toggleCart();
+    },
+    prefill:{name:'',email:'',contact:''},
+    theme:{color:'#C9A84C'}
+  };
+  var rzp = new Razorpay(options);
+  rzp.open();
+}
+
+// ─── RENDER PRODUCTS ─────────────────────────────────────────────────────────
+var currentCat = 'all';
+
+function filterCat(cat, btn){
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(function(t){t.classList.remove('active')});
+  btn.classList.add('active');
+  renderProducts();
+}
+
+function renderProducts(){
+  var list = currentCat === 'all' ? PRODUCTS : PRODUCTS.filter(function(p){return p.cat === currentCat});
+  var html = '';
+  list.forEach(function(p){
+    var priceHtml = '';
+    if(p.price){
+      priceHtml = '<div class="product-price">';
+      if(p.mrp) priceHtml += '<span class="price-mrp">MRP Rs.' + p.mrp + '</span>';
+      priceHtml += '<span class="price-sell">Rs.' + p.price + '</span></div>';
+    } else {
+      priceHtml = '<div class="product-price"><span class="price-tbd">Price updating soon</span></div>';
+    }
+    html += '<div class="product-card">';
+    if(p.badge) html += '<div class="product-badge">' + p.badge + '</div>';
+    html += '<div class="product-img-wrap"><img src="' + p.img + '" alt="' + p.name + '" onerror="this.parentElement.innerHTML=\'<span class=product-img-placeholder>🪔</span>\'"></div>';
+    html += '<div class="product-body">';
+    html += '<div class="product-brand">' + p.brand + '</div>';
+    html += '<div class="product-name">' + p.name + '</div>';
+    html += '<div class="product-desc">' + p.desc + '</div>';
+    html += '<div class="product-footer">' + priceHtml;
+    html += '<button class="btn-add" onclick="addToCart(\'' + p.id + '\')">Add →</button>';
+    html += '</div></div></div>';
+  });
+  document.getElementById('productGrid').innerHTML = html;
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show')},2500);
+}
+
+// ─── MOBILE MENU ─────────────────────────────────────────────────────────────
+function toggleMobileMenu(){
+  document.getElementById('navLinks').classList.toggle('mobile-open');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+renderProducts();
+</script>
+</body>
+</html>
