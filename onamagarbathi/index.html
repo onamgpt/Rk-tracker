@@ -151,9 +151,6 @@ footer{background:#080503;padding:36px 5vw;text-align:center;border-top:1px soli
   .wa-float-label{display:none}
 }
 </style>
-<script src="imgs1.js"></script>
-<script src="imgs2.js"></script>
-<script src="imgs3.js"></script>
 </head>
 <body>
 
@@ -295,11 +292,6 @@ footer{background:#080503;padding:36px 5vw;text-align:center;border-top:1px soli
 
 <script>
 var IMGS = {};
-// Images loaded from separate files (imgs1.js, imgs2.js, imgs3.js)
-function mergeImgs(obj){for(var k in obj){if(obj.hasOwnProperty(k)){IMGS[k]=obj[k];}}}
-if(typeof IMGS1 !== 'undefined'){mergeImgs(IMGS1);}
-if(typeof IMGS2 !== 'undefined'){mergeImgs(IMGS2);}
-if(typeof IMGS3 !== 'undefined'){mergeImgs(IMGS3);}
 
 var PRODUCTS = [
   {id:"vaishak",name:"Vaishak Special",brand:"Vaishak by Onam",cat:"premium",mrp:null,price:null,desc:"The iconic flagship fragrance. Rich floral blend that defined a generation of prayer.",badge:"Flagship"},
@@ -511,10 +503,33 @@ function showToast(msg){
 function toggleMenu(){document.getElementById("navLinks").classList.toggle("mob-open");}
 function closeMenu(){document.getElementById("navLinks").classList.remove("mob-open");}
 
+function loadScript(src, cb){
+  var s = document.createElement("script");
+  s.src = src;
+  s.onload = cb;
+  document.head.appendChild(s);
+}
+var loaded = 0;
+function onImgLoad(){
+  loaded++;
+  if(loaded==3){
+    // All 3 image files loaded - merge and render
+    if(typeof IMGS1!="undefined"){for(var k in IMGS1){IMGS[k]=IMGS1[k];}}
+    if(typeof IMGS2!="undefined"){for(var k in IMGS2){IMGS[k]=IMGS2[k];}}
+    if(typeof IMGS3!="undefined"){for(var k in IMGS3){IMGS[k]=IMGS3[k];}}
+    renderProducts();
+  }
+}
 if(document.readyState=="loading"){
-  document.addEventListener("DOMContentLoaded",function(){renderProducts();});
+  document.addEventListener("DOMContentLoaded",function(){
+    loadScript("imgs1.js",onImgLoad);
+    loadScript("imgs2.js",onImgLoad);
+    loadScript("imgs3.js",onImgLoad);
+  });
 }else{
-  renderProducts();
+  loadScript("imgs1.js",onImgLoad);
+  loadScript("imgs2.js",onImgLoad);
+  loadScript("imgs3.js",onImgLoad);
 }
 </script>
 </body>
